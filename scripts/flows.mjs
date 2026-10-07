@@ -82,6 +82,23 @@ await page.waitForTimeout(400);
 assert.equal(await countTx(), before, 'annuler restaure');
 step('glisser pour supprimer + annuler');
 
+// --- Glisser depuis le bord gauche pour revenir ---
+await openMore('Comptes');
+await page.getByText('Patrimoine total').waitFor();
+await page.locator('div.touch-none.w-4').last().evaluate(async (el) => {
+  const r = el.getBoundingClientRect();
+  const o = (x) => ({ bubbles: true, cancelable: true, pointerId: 2, pointerType: 'touch', isPrimary: true, clientX: x, clientY: r.y + 200, button: 0, buttons: 1 });
+  el.dispatchEvent(new PointerEvent('pointerdown', o(5)));
+  for (let i = 1; i <= 12; i++) {
+    await new Promise((res) => setTimeout(res, 16));
+    window.dispatchEvent(new PointerEvent('pointermove', o(5 + i * 20)));
+  }
+  window.dispatchEvent(new PointerEvent('pointerup', { ...o(245), buttons: 0 }));
+});
+await page.getByText('Patrimoine total').waitFor({ state: 'detached' });
+step('glisser depuis le bord pour revenir');
+await nav('Opérations');
+
 // --- Filtres ---
 await page.getByRole('button', { name: 'Filtres' }).click();
 await page.getByRole('radio', { name: 'Revenus' }).click();

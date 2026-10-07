@@ -14,6 +14,10 @@ import { checkBudgetAfterChange } from '../alerts';
 import type { Frequency, ID, ISODate, TxType } from '../../types';
 
 const TYPE_LABEL: Record<TxType, string> = { expense: 'Dépense', income: 'Revenu', transfer: 'Virement' };
+// Accords en genre : « Nouvelle dépense » mais « Nouveau revenu »
+const NEW_LABEL: Record<TxType, string> = { expense: 'Nouvelle dépense', income: 'Nouveau revenu', transfer: 'Nouveau virement' };
+const ADDED_LABEL: Record<TxType, string> = { expense: 'Dépense ajoutée', income: 'Revenu ajouté', transfer: 'Virement ajouté' };
+const RECURRING_LABEL: Record<TxType, string> = { expense: 'Dépense récurrente créée', income: 'Revenu récurrent créé', transfer: 'Virement récurrent créé' };
 
 export function TransactionSheet() {
   const data = useData();
@@ -133,11 +137,11 @@ export function TransactionSheet() {
           emoji: cat?.emoji,
         });
         haptic('success');
-        toast(`${TYPE_LABEL[type]} récurrente créée`, { tone: 'success' });
+        toast(RECURRING_LABEL[type], { tone: 'success' });
       } else {
         const tx = await addTransaction({ ...payload, recurringId: null, occurrence: null });
         haptic('success');
-        toast(`${TYPE_LABEL[type]} ajoutée · ${formatMoney(cents)}`, {
+        toast(`${ADDED_LABEL[type]} · ${formatMoney(cents)}`, {
           action: {
             label: 'Annuler',
             onClick: () => {
@@ -176,7 +180,7 @@ export function TransactionSheet() {
       open={open}
       onClose={close}
       full
-      title={editing ? 'Modifier' : `Nouvelle ${TYPE_LABEL[type].toLowerCase()}`}
+      title={editing ? 'Modifier' : NEW_LABEL[type]}
       right={
         <button className="min-h-11 px-2 text-[17px] font-semibold text-accent disabled:opacity-40" onClick={save} disabled={!canSave}>
           {editing ? 'OK' : 'Ajouter'}

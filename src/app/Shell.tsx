@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useNav, type RouteName, type TabId } from '../stores/nav';
+import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/react';
+import { useNav, type Route, type RouteName, type TabId } from '../stores/nav';
 import { TabBar } from '../components/TabBar';
 import { Toaster, ConfirmHost } from '../components/Overlays';
 import { TransactionSheet } from '../features/transactions/TransactionSheet';
@@ -49,32 +49,51 @@ function Loading() {
   );
 }
 
+/** Écran de la pile : glisser depuis le bord gauche pour revenir (comme sur iOS). */
+function StackScreen({ route, index, top }: { route: Route; index: number; top: boolean }) {
+  const Comp = SCREENS[route.name];
+  const controls = useDragControls();
+  const pop = useNav((s) => s.pop);
+  const canSwipe = top && index > 0;
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    if (info.offset.x > 110 || info.velocity.x > 600) pop();
+  };
+  return (
+    <motion.div
+      className="absolute inset-0 bg-bg"
+      style={{ zIndex: index, boxShadow: index > 0 ? '-8px 0 24px rgba(0,0,0,0.08)' : undefined }}
+      initial={index === 0 ? false : { x: '100%' }}
+      animate={{ x: top ? 0 : '-28%' }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.36 }}
+      drag={canSwipe ? 'x' : false}
+      dragListener={false}
+      dragControls={controls}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={{ left: 0, right: 1 }}
+      dragSnapToOrigin
+      onDragEnd={onDragEnd}
+      aria-hidden={!top}
+      inert={!top}
+    >
+      <Suspense fallback={<Loading />}>
+        <Comp params={route.params} />
+      </Suspense>
+      {canSwipe && (
+        <div className="absolute bottom-0 left-0 z-30 w-4 touch-none" style={{ top: "calc(env(safe-area-inset-top) + 44px)" }} onPointerDown={(e) => controls.start(e)} aria-hidden="true" />
+      )}
+    </motion.div>
+  );
+}
+
 function TabStack({ tab, active }: { tab: TabId; active: boolean }) {
   const stack = useNav((s) => s.stacks[tab]);
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ display: active ? 'block' : 'none' }}>
       <AnimatePresence initial={false}>
-        {stack.map((route, i) => {
-          const Comp = SCREENS[route.name];
-          const top = i === stack.length - 1;
-          return (
-            <motion.div
-              key={route.key}
-              className="absolute inset-0 bg-bg"
-              style={{ zIndex: i, boxShadow: i > 0 ? '-8px 0 24px rgba(0,0,0,0.08)' : undefined }}
-              initial={i === 0 ? false : { x: '100%' }}
-              animate={{ x: top ? 0 : '-28%' }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.36 }}
-              aria-hidden={!top}
-              inert={!top}
-            >
-              <Suspense fallback={<Loading />}>
-                <Comp params={route.params} />
-              </Suspense>
-            </motion.div>
-          );
-        })}
+        {stack.map((route, i) => (
+          <StackScreen key={route.key} route={route} index={i} top={i === stack.length - 1} />
+        ))}
       </AnimatePresence>
     </div>
   );
