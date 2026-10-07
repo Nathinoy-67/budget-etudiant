@@ -44,7 +44,7 @@ const countApplePay = () =>
 await page.goto(APP);
 await page.getByRole('button', { name: /données exemple/ }).click();
 await page.getByText('Données exemple chargées').waitFor({ timeout: 20000 });
-await page.getByRole('navigation').getByRole('button', { name: 'Plus' }).click();
+await page.getByRole('button', { name: 'Réglages' }).click();
 await page.getByRole('button', { name: /Paiements Apple Pay/ }).click();
 
 await page.getByRole('button', { name: 'Activer le relais' }).click();

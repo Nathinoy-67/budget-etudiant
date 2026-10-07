@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Sheet } from '../../components/Sheet';
 import { Button, Field, Segmented, Select, TextInput, Toggle } from '../../components/ui';
-import { AccountChips, CategoryGrid } from '../../components/pickers';
+import { CategoryGrid } from '../../components/pickers';
 import { confirmAction } from '../../components/Overlays';
 import { useData } from '../../hooks/useData';
 import { toast } from '../../stores/ui';
@@ -81,7 +81,6 @@ export function RecurringSheet({
     if (!name.trim()) return toast('Donne un nom (ex. Loyer, Netflix)', { tone: 'warning' });
     if (cents <= 0) return toast('Saisis un montant', { tone: 'warning' });
     if (!accountId) return toast('Choisis un compte', { tone: 'warning' });
-    if (type === 'transfer' && (!toAccountId || toAccountId === accountId)) return toast('Choisis deux comptes différents', { tone: 'warning' });
     if (!isValidISO(startDate)) return toast('Date invalide', { tone: 'warning' });
     if (endDate && endDate < startDate) return toast('La date de fin est avant le début', { tone: 'warning' });
     const cat = categoryId ? categories.find((c) => c.id === categoryId) : null;
@@ -145,12 +144,11 @@ export function RecurringSheet({
           value={type}
           onChange={(t) => {
             setType(t);
-            if (t !== 'transfer') setCategoryId(categories.find((c) => c.kind === t && !c.archived)?.id ?? null);
+            setCategoryId(categories.find((c) => c.kind === t && !c.archived)?.id ?? null);
           }}
           options={[
             { value: 'expense', label: 'Charge' },
             { value: 'income', label: 'Revenu' },
-            { value: 'transfer', label: 'Virement' },
           ]}
         />
       )}
@@ -161,7 +159,7 @@ export function RecurringSheet({
             id={id}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={type === 'income' ? 'Ex. Salaire, APL, Bourse' : type === 'transfer' ? 'Ex. Épargne auto' : 'Ex. Loyer, Netflix'}
+            placeholder={type === 'income' ? 'Ex. Salaire, APL, Bourse' : 'Ex. Loyer, Netflix'}
             maxLength={50}
           />
         )}
@@ -209,29 +207,10 @@ export function RecurringSheet({
         <p className="-mt-1 mb-3 px-1 text-[12px] text-label-2">Les mois plus courts, l'échéance tombera le dernier jour du mois.</p>
       )}
 
-      {type !== 'transfer' ? (
-        <>
-          <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Catégorie</p>
-          <div className="mb-4">
-            <CategoryGrid categories={kindCats} value={categoryId} onChange={setCategoryId} />
-          </div>
-          <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Compte</p>
-          <div className="mb-4">
-            <AccountChips accounts={activeAccounts} value={accountId} onChange={setAccountId} />
-          </div>
-        </>
-      ) : (
-        <div className="mb-4 space-y-3">
-          <div>
-            <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Depuis</p>
-            <AccountChips accounts={activeAccounts} value={accountId} onChange={setAccountId} />
-          </div>
-          <div>
-            <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Vers</p>
-            <AccountChips accounts={activeAccounts} value={toAccountId} onChange={setToAccountId} exclude={accountId} />
-          </div>
-        </div>
-      )}
+      <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Catégorie</p>
+      <div className="mb-4">
+        <CategoryGrid categories={kindCats} value={categoryId} onChange={setCategoryId} />
+      </div>
 
       {type === 'expense' && (
         <div className="mb-4 rounded-xl bg-fill px-3.5 py-2">

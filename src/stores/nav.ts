@@ -1,26 +1,9 @@
 import { create } from 'zustand';
 
-export type TabId = 'home' | 'transactions' | 'stats' | 'more';
+/** Deux onglets seulement : l'accueil (avec les opérations) et l'analyse. */
+export type TabId = 'home' | 'stats';
 
-export type RouteName =
-  | 'home'
-  | 'transactions'
-  | 'stats'
-  | 'more'
-  | 'accounts'
-  | 'account'
-  | 'budgets'
-  | 'recurrings'
-  | 'subscriptions'
-  | 'goals'
-  | 'goal'
-  | 'shared'
-  | 'group'
-  | 'simulator'
-  | 'categories'
-  | 'quickadds'
-  | 'settings'
-  | 'applepay';
+export type RouteName = 'home' | 'stats' | 'search' | 'settings' | 'recurrings' | 'categories' | 'simulator' | 'applepay';
 
 export interface Route {
   key: string;
@@ -34,7 +17,7 @@ interface NavState {
   setTab: (tab: TabId) => void;
   push: (name: RouteName, params?: Record<string, string>) => void;
   pop: () => void;
-  /** Ouvre un écran depuis n'importe où (bascule sur l'onglet "Plus" si besoin). */
+  /** Ouvre un écran dans l'onglet courant. */
   open: (name: RouteName, params?: Record<string, string>) => void;
 }
 
@@ -45,9 +28,7 @@ export const useNav = create<NavState>((set, get) => ({
   tab: 'home',
   stacks: {
     home: [route('home')],
-    transactions: [route('transactions')],
     stats: [route('stats')],
-    more: [route('more')],
   },
   setTab: (tab) => {
     const { tab: current, stacks } = get();
@@ -64,12 +45,5 @@ export const useNav = create<NavState>((set, get) => ({
     if (stacks[tab].length <= 1) return;
     set({ stacks: { ...stacks, [tab]: stacks[tab].slice(0, -1) } });
   },
-  open: (name, params) => {
-    const { tab, stacks } = get();
-    if (tab === 'home' || tab === 'more') {
-      set({ stacks: { ...stacks, [tab]: [...stacks[tab], route(name, params)] } });
-    } else {
-      set({ tab: 'more', stacks: { ...stacks, more: [stacks.more[0], route(name, params)] } });
-    }
-  },
+  open: (name, params) => get().push(name, params),
 }));

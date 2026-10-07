@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DataProvider, useData } from '../hooks/useData';
-import { ensureInitialized, generateDueRecurring, requestPersistentStorage } from '../db/actions';
+import { ensureInitialized, generateDueRecurring, requestPersistentStorage, simplifyToSingleAccount } from '../db/actions';
 import { Shell } from './Shell';
 import { Onboarding } from '../features/onboarding/Onboarding';
 import { LockScreen } from '../features/security/LockScreen';
@@ -111,6 +111,7 @@ export default function App() {
     (async () => {
       try {
         await ensureInitialized();
+        await simplifyToSingleAccount();
         await generateDueRecurring();
         setReady(true);
         void requestPersistentStorage();

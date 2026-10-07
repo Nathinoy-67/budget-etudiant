@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
-import { Button, Card, IconButton, List, Money, Section, Segmented, Select, Toggle } from '../../components/ui';
+import { Button, Card, IconButton, List, Section, Segmented, Select, Toggle } from '../../components/ui';
 import { useData } from '../../hooks/useData';
-import { averageMonthlyByCategory, goalImpact, simulate } from '../../lib/simulator';
-import { goalProgress } from '../../lib/goals';
+import { averageMonthlyByCategory, simulate } from '../../lib/simulator';
 import { monthlyEquivalent } from '../../lib/recurrence';
 import { formatMoney } from '../../lib/money';
-import { addMonths, formatMonthYear } from '../../lib/dates';
 import type { ID } from '../../types';
 
 interface Line {
@@ -19,7 +17,7 @@ interface Line {
 let k = 0;
 
 export default function SimulatorScreen() {
-  const { categories, transactions, today, recurrings, goals, contributions } = useData();
+  const { categories, transactions, today, recurrings } = useData();
   const averages = useMemo(() => averageMonthlyByCategory(transactions, today), [transactions, today]);
   const expenseCats = categories.filter((c) => c.kind === 'expense' && !c.archived);
   const defaultCat = expenseCats.find((c) => c.name.startsWith('Restau'))?.id ?? expenseCats[0]?.id ?? '';
@@ -42,22 +40,19 @@ export default function SimulatorScreen() {
   ];
   const result = simulate(adjustments, Number(horizon));
 
-  const activeGoals = goals.filter((g) => !g.archived).map((g) => ({ g, p: goalProgress(g, contributions, today) })).filter((x) => !x.p.reached);
 
   return (
     <Screen title="Et si… ?" back subtitle="Teste des économies et vois leur effet">
-      <Card className="mb-5 bg-gradient-to-br from-[#12A594] to-[#0b7a6d] p-5 text-white">
-        <p className="text-[15px] text-white/85">Tu économiserais</p>
-        <p className="text-[38px] leading-tight font-bold tracking-tight tabular">{formatMoney(result.yearly)}</p>
-        <p className="text-[15px] text-white/90">
-          par an, soit <strong className="tabular">{formatMoney(result.monthly)}</strong> par mois
+      <div className="mb-5 rounded-[22px] bg-ink p-5 text-on-ink">
+        <p className="text-[14px] text-on-ink-2">Tu économiserais</p>
+        <p className="mt-1 text-[38px] leading-tight font-semibold tracking-[-0.03em] tabular">{formatMoney(result.yearly)}</p>
+        <p className="text-[15px] text-on-ink-2">
+          par an, soit <span className="font-medium text-on-ink tabular">{formatMoney(result.monthly)}</span> par mois
         </p>
-        <div className="mt-3 rounded-xl bg-white/15 px-3 py-2 text-[14px]">
-          Sur {Number(horizon) / 12 >= 1 ? `${Number(horizon) / 12} an${Number(horizon) > 12 ? 's' : ''}` : `${horizon} mois`} :{' '}
-          <strong className="tabular">{formatMoney(result.total)}</strong>
-          {result.total > 0 && ` · ${Math.floor(result.total / 150000) > 0 ? `≈ ${Math.floor(result.total / 150000)} permis de conduire 🚗` : `≈ ${Math.floor(result.total / 1100)} menus kebab 🌯`}`}
+        <div className="mt-4 border-t border-white/15 pt-3 text-[14px] text-on-ink-2">
+          Sur {Number(horizon) / 12} an{Number(horizon) > 12 ? 's' : ''} : <span className="font-medium text-on-ink tabular">{formatMoney(result.total)}</span>
         </div>
-      </Card>
+      </div>
 
       <Segmented
         label="Horizon"
@@ -182,30 +177,6 @@ export default function SimulatorScreen() {
         </Card>
       </Section>
 
-      {activeGoals.length > 0 && result.monthly > 0 && (
-        <Section title="Impact sur tes objectifs" footer="Si tu verses ces économies en plus de ton rythme actuel d'épargne.">
-          <List>
-            {activeGoals.map(({ g, p }) => {
-              const base = Math.max(p.recentMonthlyAverage, 0);
-              const imp = goalImpact(p.remaining, base, result.monthly);
-              return (
-                <div key={g.id} className="relative flex min-h-[60px] items-center gap-3 px-4 py-2">
-                  <span className="text-[22px]">{g.emoji}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[16px] font-medium">{g.name}</span>
-                    <span className="block text-[13px] text-label-2">
-                      {imp.after != null && `Atteint vers ${formatMonthYear(addMonths(today, imp.after))}`}
-                      {imp.gained != null && imp.gained > 0 && ` · ${imp.gained} mois plus tôt`}
-                      {imp.before == null && ' (au lieu de jamais au rythme actuel)'}
-                    </span>
-                  </span>
-                  <Money cents={p.remaining} compact className="text-[14px] text-label-2" />
-                </div>
-              );
-            })}
-          </List>
-        </Section>
-      )}
     </Screen>
   );
 }

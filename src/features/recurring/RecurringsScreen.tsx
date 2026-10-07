@@ -3,7 +3,8 @@ import { Screen } from '../../components/Screen';
 import { Badge, Button, Card, EmptyState, IconButton, List, Money, Section } from '../../components/ui';
 import { useData } from '../../hooks/useData';
 import { formatShortDate, inDaysLabel } from '../../lib/dates';
-import { frequencyShort, monthlyEquivalent, nextOccurrence } from '../../lib/recurrence';
+import { frequencyShort, monthlyEquivalent, nextOccurrence, yearlyEquivalent } from '../../lib/recurrence';
+import { formatMoney } from '../../lib/money';
 import { RecurringSheet, type RecurringDraft } from './RecurringSheet';
 import type { Recurring, TxType } from '../../types';
 
@@ -49,50 +50,56 @@ export function RecurringRow({ r, onClick }: { r: Recurring; onClick: () => void
 const GROUPS: { type: TxType; title: string }[] = [
   { type: 'income', title: 'Revenus' },
   { type: 'expense', title: 'Charges fixes' },
-  { type: 'transfer', title: 'Virements automatiques' },
 ];
 
+/** Revenus et charges fixes (salaire, aides, loyer, abonnements…), ajoutés automatiquement chaque mois. */
 export function RecurringsScreen() {
   const { recurrings } = useData();
   const [selected, setSelected] = useState<Recurring | null>(null);
   const [draft, setDraft] = useState<RecurringDraft | null>(null);
   const open = !!selected || !!draft;
+  const visible = recurrings.filter((r) => r.type !== 'transfer');
 
   const totals = useMemo(() => {
     let income = 0;
     let expense = 0;
-    for (const r of recurrings) {
+    let subsMonthly = 0;
+    let subsYearly = 0;
+    for (const r of visible) {
       if (!r.active) continue;
       const m = monthlyEquivalent(r.amount, r.frequency, r.interval);
       if (r.type === 'income') income += m;
-      else if (r.type === 'expense') expense += m;
+      else expense += m;
+      if (r.isSubscription) {
+        subsMonthly += m;
+        subsYearly += yearlyEquivalent(r.amount, r.frequency, r.interval);
+      }
     }
-    return { income, expense };
-  }, [recurrings]);
+    return { income, expense, subsMonthly, subsYearly };
+  }, [visible]);
 
   return (
-    <Screen title="Récurrentes" back actions={<IconButton icon="plus" label="Nouvelle récurrence" onClick={() => setDraft({})} />}>
-      <Card className="mb-5 grid grid-cols-3 divide-x divide-separator p-3 text-center">
-        <div>
-          <p className="text-[12px] text-label-2">Revenus fixes</p>
-          <Money cents={totals.income} compact className="text-[17px] font-semibold" />
+    <Screen title="Revenus et charges" back actions={<IconButton icon="plus" label="Ajouter" onClick={() => setDraft({})} />}>
+      <Card className="mb-7 grid grid-cols-3 divide-x divide-separator py-3.5 text-center">
+        <div className="px-2">
+          <p className="text-[12px] text-label-2">Revenus</p>
+          <Money cents={totals.income} compact className="text-[16px] font-semibold" />
         </div>
-        <div>
-          <p className="text-[12px] text-label-2">Charges fixes</p>
-          <Money cents={-totals.expense} compact className="text-[17px] font-semibold" />
+        <div className="px-2">
+          <p className="text-[12px] text-label-2">Charges</p>
+          <Money cents={totals.expense} compact className="text-[16px] font-semibold" />
         </div>
-        <div>
-          <p className="text-[12px] text-label-2">Différence</p>
-          <Money cents={totals.income - totals.expense} compact className={`text-[17px] font-semibold ${totals.income - totals.expense < 0 ? "text-negative" : ""}`} />
+        <div className="px-2">
+          <p className="text-[12px] text-label-2">Reste</p>
+          <Money cents={totals.income - totals.expense} compact className={`text-[16px] font-semibold ${totals.income - totals.expense < 0 ? 'text-negative' : ''}`} />
         </div>
       </Card>
-      <p className="-mt-3 mb-5 px-1 text-[12px] text-label-2">Montants ramenés au mois (hebdo × 52 / 12, annuel / 12).</p>
 
-      {recurrings.length === 0 ? (
+      {visible.length === 0 ? (
         <EmptyState
           icon="repeat"
-          title="Aucune opération récurrente"
-          text="Ajoute ton loyer, tes aides (APL, bourse), ton salaire ou le virement de tes parents : ils seront ajoutés automatiquement chaque mois."
+          title="Rien pour l'instant"
+          text="Ajoute ton salaire, tes aides (APL, bourse), ton loyer et tes abonnements : ils seront comptés automatiquement chaque mois."
           action={
             <div className="flex flex-col gap-2">
               <Button onClick={() => setDraft({ type: 'income', name: 'APL', emoji: '🏛️' })}>Ajouter un revenu</Button>
@@ -104,10 +111,18 @@ export function RecurringsScreen() {
         />
       ) : (
         GROUPS.map(({ type, title }) => {
-          const items = recurrings.filter((r) => r.type === type).sort((a, b) => Number(b.active) - Number(a.active) || b.amount - a.amount);
+          const items = visible.filter((r) => r.type === type).sort((a, b) => Number(b.active) - Number(a.active) || b.amount - a.amount);
           if (!items.length) return null;
           return (
-            <Section key={type} title={title}>
+            <Section
+              key={type}
+              title={title}
+              footer={
+                type === 'expense' && totals.subsMonthly > 0
+                  ? `Dont abonnements : ${formatMoney(totals.subsMonthly)} par mois, soit ${formatMoney(totals.subsYearly)} par an.`
+                  : undefined
+              }
+            >
               <List>
                 {items.map((r) => (
                   <RecurringRow key={r.id} r={r} onClick={() => setSelected(r)} />
@@ -118,8 +133,7 @@ export function RecurringsScreen() {
         })
       )}
       <p className="px-1 text-[13px] text-label-2">
-        Les échéances sont ajoutées automatiquement à l'ouverture de l'appli, le jour J. Tu peux sauter une échéance (mois sans APL, loyer
-        offert…) en touchant la récurrence.
+        Ajoutés automatiquement le jour J. Touche une ligne pour la modifier, la mettre en pause ou sauter un mois.
       </p>
 
       <RecurringSheet

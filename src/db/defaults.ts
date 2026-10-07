@@ -1,4 +1,4 @@
-import type { Account, Category, QuickAdd, Settings } from '../types';
+import type { Account, Category, Settings } from '../types';
 import { uid } from './db';
 
 export const PALETTE = [
@@ -52,22 +52,9 @@ export function buildDefaultCategories(): Category[] {
   ];
 }
 
+/** Un seul compte : le compte courant (toutes les dépenses et tous les revenus y passent). */
 export function buildDefaultAccounts(now = Date.now()): Account[] {
-  return [
-    { id: uid(), name: 'Compte courant', type: 'courant', emoji: '💳', color: '#5B5BD6', initialBalance: 0, order: 0, createdAt: now },
-    { id: uid(), name: 'Livret A', type: 'livret', emoji: '🏦', color: '#30A46C', initialBalance: 0, order: 1, createdAt: now },
-    { id: uid(), name: 'Espèces', type: 'especes', emoji: '💵', color: '#FFB224', initialBalance: 0, order: 2, createdAt: now },
-  ];
-}
-
-export function buildDefaultQuickAdds(categories: Category[]): QuickAdd[] {
-  const byName = (n: string) => categories.find((c) => c.name === n)?.id ?? null;
-  return [
-    { id: uid(), label: 'Café', emoji: '☕', amount: 150, categoryId: byName('Restau/Fast-food'), accountId: null, order: 0 },
-    { id: uid(), label: 'Ticket de bus', emoji: '🎫', amount: 200, categoryId: byName('Transport'), accountId: null, order: 1 },
-    { id: uid(), label: 'Courses', emoji: '🛒', amount: 2500, categoryId: byName('Courses'), accountId: null, order: 2 },
-    { id: uid(), label: 'Menu RU', emoji: '🍽️', amount: 100, categoryId: byName('Restau/Fast-food'), accountId: null, order: 3 },
-  ];
+  return [{ id: uid(), name: 'Compte courant', type: 'courant', emoji: '💳', color: '#5B5BD6', initialBalance: 0, order: 0, createdAt: now }];
 }
 
 export function defaultSettings(now = Date.now()): Settings {
@@ -89,14 +76,6 @@ export function defaultSettings(now = Date.now()): Settings {
     createdAt: now,
   };
 }
-
-export const ACCOUNT_TYPE_LABEL: Record<Account['type'], string> = {
-  courant: 'Compte courant',
-  epargne: 'Épargne',
-  livret: 'Livret',
-  especes: 'Espèces',
-  autre: 'Autre',
-};
 
 export const CURRENCIES = [
   { code: 'EUR', label: 'Euro (€)' },

@@ -51,7 +51,6 @@ export function Onboarding() {
   const [startDay, setStartDay] = useState(1);
   const [rent, setRent] = useState('');
   const [rentDay, setRentDay] = useState(5);
-  const [balance, setBalance] = useState('');
   const expenseCats = categories.filter((c) => c.kind === 'expense');
   const [enabled, setEnabled] = useState<Set<string>>(() => new Set(expenseCats.map((c) => c.id)));
   const [busy, setBusy] = useState(false);
@@ -72,14 +71,12 @@ export function Onboarding() {
       const dateFor = (day: number) => toISO(y, m, Math.min(day, daysInMonth(y, m)));
       const courant = accounts.find((a) => a.type === 'courant') ?? accounts[0];
       const catByName = (n: string) => categories.find((c) => c.name === n);
-      let passedNet = 0;
 
       for (const line of incomes) {
         const cents = parseAmount(line.amount || '0') ?? 0;
         if (cents <= 0) continue;
         const cat = catByName(line.categoryName);
         const start = dateFor(line.day);
-        if (start <= today) passedNet += cents;
         await addRecurring({
           name: line.label.replace(' / salaire', ''),
           type: 'income',
@@ -99,7 +96,6 @@ export function Onboarding() {
       }
       if (rentCents > 0) {
         const start = dateFor(rentDay);
-        if (start <= today) passedNet -= rentCents;
         await addRecurring({
           name: 'Loyer',
           type: 'expense',
@@ -117,9 +113,6 @@ export function Onboarding() {
           emoji: '🏠',
         });
       }
-      // Le solde saisi est celui d'aujourd'hui : on retire ce qui vient d'être généré pour ce mois
-      const bal = parseAmount(balance || '0') ?? 0;
-      await db.accounts.update(courant.id, { initialBalance: bal - passedNet });
 
       await db.transaction('rw', db.categories, async () => {
         for (const c of expenseCats) await db.categories.update(c.id, { archived: !enabled.has(c.id) });
@@ -193,15 +186,10 @@ export function Onboarding() {
           <DaySelect label="Jour de paiement du loyer" value={rentDay} onChange={setRentDay} />
         </div>
       </div>
-      <div className="mt-3 rounded-2xl bg-card p-3">
-        <p className="mb-2 text-[15px] font-medium">Combien as-tu sur ton compte courant aujourd'hui ?</p>
-        <TextInput inputMode="decimal" placeholder="0 €" aria-label="Solde actuel du compte courant" value={balance} onChange={(e) => setBalance(e.target.value)} />
-        <p className="mt-1.5 text-[13px] text-label-2">Facultatif, modifiable plus tard dans Comptes.</p>
-      </div>
       {totalIncome > 0 && (
-        <div className="mt-5 rounded-2xl bg-accent-soft p-4 text-center">
+        <div className="mt-5 rounded-2xl bg-card p-4 text-center shadow-card">
           <p className="text-[15px] text-label-2">Après le loyer, il te reste</p>
-          <p className="text-[30px] font-bold text-accent tabular">{formatMoney(totalIncome - rentCents)}</p>
+          <p className="text-[30px] font-semibold tracking-[-0.02em] tabular">{formatMoney(totalIncome - rentCents)}</p>
           <p className="text-[15px] text-label-2">soit environ {formatMoney(Math.max(0, Math.floor((totalIncome - rentCents) / 30)))} par jour</p>
         </div>
       )}

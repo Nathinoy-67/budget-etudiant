@@ -81,7 +81,7 @@ export async function receiveApplePay(data: AppData): Promise<Transaction | null
   history.replaceState(null, '', location.pathname);
   const payment = parseIncomingPayment(search);
   if (!payment) {
-    toast('Paiement Apple Pay reçu mais illisible. Vérifie le raccourci (Plus → Paiements Apple Pay).', { tone: 'error', duration: 6000 });
+    toast('Paiement Apple Pay reçu mais illisible. Vérifie le raccourci (Réglages → Paiements Apple Pay).', { tone: 'error', duration: 6000 });
     return null;
   }
 

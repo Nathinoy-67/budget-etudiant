@@ -11,11 +11,14 @@ const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
-const nav = (label) => page.getByRole('navigation').getByRole('button', { name: label }).click();
-const openMore = async (title) => {
-  await nav('Plus');
-  await nav('Plus'); // re-taper l'onglet revient à la racine
-  await page.getByRole('button', { name: new RegExp(title) }).first().click();
+const tab = async (label) => {
+  await page.getByRole('navigation').getByRole('button', { name: label }).click();
+  await page.getByRole('navigation').getByRole('button', { name: label }).click(); // re-taper = retour à la racine
+};
+const settings = async (row) => {
+  await tab('Accueil');
+  await page.getByRole('button', { name: 'Réglages' }).click();
+  if (row) await page.getByRole('button', { name: new RegExp(row) }).first().click();
 };
 const back = () => page.getByRole('button', { name: 'Retour' }).last().click();
 const confirm = (label) => page.getByRole('alertdialog').getByRole('button', { name: label }).click();
@@ -42,18 +45,30 @@ const initial = await countTx();
 assert.ok(initial > 100, 'données démo chargées');
 step(`démo chargée (${initial} opérations)`);
 
+// --- Accueil : pas d'ajout rapide, opérations du mois présentes ---
+assert.equal(await page.getByText('Ajout rapide').count(), 0, "plus d'ajout rapide");
+assert.equal(await page.getByRole('navigation').getByRole('button').count(), 3, '2 onglets + bouton +');
+assert.ok((await page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).count()) > 0, "opérations sur l'accueil");
+step('accueil simplifié (2 onglets, opérations du mois)');
+
+// --- Ajout d'une dépense (sans choix de compte ni virement) ---
+await page.getByRole('button', { name: 'Ajouter une opération' }).click();
+assert.equal(await page.getByRole('radio', { name: 'Virement' }).count(), 0, 'plus de virement');
+await keypad(['4', 'Virgule', '5']);
+await page.getByRole('radio', { name: /Courses/ }).click();
+await page.getByRole('button', { name: /^Ajouter 4,50/ }).click();
+await page.getByText(/Dépense ajoutée · 4,50/).waitFor();
+assert.equal(await countTx(), initial + 1);
+step('dépense ajoutée en 3 gestes');
+
 // --- Recherche + édition ---
-await nav('Opérations');
-await page.getByRole('button', { name: 'Tout', exact: true }).click();
+await page.getByRole('button', { name: 'Rechercher' }).click();
+await page.getByRole('radio', { name: 'Tout', exact: true }).click();
 await page.getByLabel('Rechercher une opération').fill('kebab');
 const rows = page.getByRole('button', { name: /Kebab, dépense/ });
 assert.ok((await rows.count()) > 0, 'recherche insensible à la casse');
 await rows.first().click();
-await page.getByRole('button', { name: 'Effacer' }).click();
-await page.getByRole('button', { name: 'Effacer' }).click();
-await page.getByRole('button', { name: 'Effacer' }).click();
-await page.getByRole('button', { name: 'Effacer' }).click();
-await page.getByRole('button', { name: 'Effacer' }).click();
+for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Effacer' }).click();
 await keypad(['9', 'Virgule', '9']);
 await page.getByRole('button', { name: 'Enregistrer' }).click();
 await page.getByText('Opération modifiée').waitFor();
@@ -63,7 +78,7 @@ step('recherche et modification');
 // --- Suppression par glissement + annulation ---
 await page.getByLabel('Rechercher une opération').fill('');
 const before = await countTx();
-const target = page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).first();
+const target = page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).locator('visible=true').first();
 const box = await target.boundingBox();
 await target.evaluate(async (el, b) => {
   const y = b.y + b.height / 2;
@@ -82,9 +97,14 @@ await page.waitForTimeout(400);
 assert.equal(await countTx(), before, 'annuler restaure');
 step('glisser pour supprimer + annuler');
 
-// --- Glisser depuis le bord gauche pour revenir ---
-await openMore('Comptes');
-await page.getByText('Patrimoine total').waitFor();
+// --- Filtre revenus ---
+await page.getByRole('button', { name: 'Filtres' }).click();
+await page.getByRole('radio', { name: 'Revenus' }).click();
+await page.getByRole('button', { name: 'OK' }).click();
+assert.equal(await page.getByRole('button', { name: /dépense\. Toucher/ }).locator('visible=true').count(), 0, 'filtre revenus');
+step('filtre par type');
+
+// --- Glisser depuis le bord pour revenir ---
 await page.locator('div.touch-none.w-4').last().evaluate(async (el) => {
   const r = el.getBoundingClientRect();
   const o = (x) => ({ bubbles: true, cancelable: true, pointerId: 2, pointerType: 'touch', isPrimary: true, clientX: x, clientY: r.y + 200, button: 0, buttons: 1 });
@@ -95,67 +115,41 @@ await page.locator('div.touch-none.w-4').last().evaluate(async (el) => {
   }
   window.dispatchEvent(new PointerEvent('pointerup', { ...o(245), buttons: 0 }));
 });
-await page.getByText('Patrimoine total').waitFor({ state: 'detached' });
+await page.getByLabel('Rechercher une opération').waitFor({ state: 'detached' });
 step('glisser depuis le bord pour revenir');
-await nav('Opérations');
 
-// --- Filtres ---
-await page.getByRole('button', { name: 'Filtres' }).click();
-await page.getByRole('radio', { name: 'Revenus' }).click();
-await page.getByRole('button', { name: 'OK' }).click();
-assert.equal(await page.getByRole('button', { name: /dépense\. Toucher/ }).count(), 0, 'filtre revenus');
-step('filtre par type');
+// --- Budget depuis l'Analyse ---
+await tab('Analyse');
+await page.getByRole('button', { name: /Sport\/Santé/ }).first().click();
+for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Effacer' }).click();
+await keypad(['7', '5']);
+await page.getByRole('button', { name: 'Définir le budget' }).click();
+await page.getByText(/Budget Sport\/Santé : 75,00/).waitFor();
+step("budget fixé depuis l'Analyse");
+assert.equal(await page.getByText('Épargné', { exact: true }).count(), 0, 'plus de libellé « Épargné »');
+await page.getByRole('button', { name: /Simulateur d'économies/ }).click();
+await page.getByText('Tu économiserais').waitFor();
+step("simulateur accessible depuis l'Analyse");
+await back();
 
 // --- Sauter une échéance ---
-await openMore('Opérations récurrentes');
+await settings('Revenus et charges fixes');
 await page.getByRole('button', { name: /Loyer/ }).first().click();
-const skipBtn = page.getByRole('button', { name: 'Sauter' }).first();
-await skipBtn.click();
+await page.getByRole('button', { name: 'Sauter' }).first().click();
 await page.getByRole('button', { name: 'Rétablir' }).first().waitFor();
-step('sauter une échéance');
 await page.getByRole('button', { name: 'Rétablir' }).first().click();
 await page.getByText('Échéance rétablie').waitFor();
 await page.keyboard.press('Escape');
-step('rétablir une échéance');
-await back();
-
-// --- Objectif : versement ---
-await openMore("Objectifs d'épargne");
-await page.getByRole('button', { name: /Permis de conduire/ }).click();
-await page.getByRole('button', { name: 'Ajouter', exact: true }).click();
-for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Effacer' }).click();
-await keypad(['5', '0']);
-await page.getByRole('button', { name: 'Ajouter', exact: true }).last().click();
-await page.getByText('Versement enregistré').waitFor();
-assert.ok(await page.getByText('450,00 €').first().isVisible(), 'objectif crédité (400 + 50)');
-step('versement sur un objectif');
-await back();
-await back();
-
-// --- Colocation : remboursement ---
-await openMore('Dépenses partagées');
-await page.getByRole('button', { name: /Coloc/ }).click();
-const nBefore = await page.getByRole('button', { name: 'Remboursé' }).count();
-await page.getByRole('button', { name: 'Remboursé' }).first().click();
-await confirm('Marquer comme remboursé');
-await page.getByText('Remboursement enregistré').waitFor();
-await page.waitForFunction((n) => document.querySelectorAll('button').length && [...document.querySelectorAll('button')].filter((b) => b.textContent === 'Remboursé' && b.offsetParent).length === n, nBefore - 1, { timeout: 5000 });
-step('remboursement minimal en colocation');
-await back();
+step('sauter puis rétablir une échéance');
 await back();
 
 // --- Export CSV + JSON, réinitialisation, import ---
-await openMore('Réglages');
 const [csv] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Exporter les opérations/ }).click()]);
-const csvText = readFileSync(await csv.path(), 'utf8');
-assert.ok(csvText.startsWith('﻿Date;Type;Montant'), 'CSV avec en-tête');
-step(`export CSV (${csvText.trim().split('\n').length - 1} lignes)`);
-
+assert.ok(readFileSync(await csv.path(), 'utf8').startsWith('﻿Date;Type;Montant'), 'CSV avec en-tête');
+step('export CSV');
 const [json] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Exporter une sauvegarde/ }).click()]);
 const jsonPath = await json.path();
-const backup = JSON.parse(readFileSync(jsonPath, 'utf8'));
-assert.equal(backup.app, 'budget-etudiant');
-const exported = backup.data.transactions.length;
+const exported = JSON.parse(readFileSync(jsonPath, 'utf8')).data.transactions.length;
 step(`export JSON (${exported} opérations)`);
 
 await page.getByRole('button', { name: /Tout réinitialiser/ }).click();
@@ -163,19 +157,16 @@ await confirm('Tout effacer');
 await confirm('Oui, tout effacer');
 await page.getByText('Bienvenue').waitFor();
 assert.equal(await countTx(), 0, 'réinitialisé');
-step('réinitialisation');
-
-// import depuis l'onboarding : terminer puis restaurer
 await page.getByRole('button', { name: 'Passer' }).click();
 await page.getByRole('button', { name: 'Passer' }).click();
 await page.getByRole('button', { name: 'Terminer' }).click();
-await openMore('Réglages');
+await settings();
 const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: /Restaurer une sauvegarde/ }).click()]);
 await chooser.setFiles(jsonPath);
 await confirm('Remplacer mes données');
 await page.getByText('Sauvegarde restaurée').waitFor();
 assert.equal(await countTx(), exported, 'import restaure toutes les opérations');
-step('import JSON');
+step('réinitialisation puis import JSON');
 
 // --- Code PIN ---
 await page.getByRole('switch', { name: 'Activer le code PIN' }).click();

@@ -1,19 +1,6 @@
-import type {
-  Account,
-  Category,
-  Goal,
-  GoalContribution,
-  ID,
-  ISODate,
-  QuickAdd,
-  Recurring,
-  Settings,
-  SharedExpense,
-  SharedGroup,
-  Transaction,
-} from '../types';
+import type { Category, ID, ISODate, Recurring, Settings, Transaction } from '../types';
 import { db, uid } from './db';
-import { buildDefaultAccounts, buildDefaultCategories, buildDefaultQuickAdds, defaultSettings } from './defaults';
+import { buildDefaultAccounts, buildDefaultCategories, defaultSettings } from './defaults';
 import { addDays, todayISO } from '../lib/dates';
 import { pendingOccurrences } from '../lib/recurrence';
 import { TABLE_NAMES, makeBackup, type BackupData, type BackupFile } from '../lib/backup';
@@ -22,15 +9,34 @@ import { TABLE_NAMES, makeBackup, type BackupData, type BackupFile } from '../li
 
 /** Crée les réglages, catégories, comptes et raccourcis par défaut au premier lancement. */
 export async function ensureInitialized(): Promise<void> {
-  await db.transaction('rw', [db.settings, db.categories, db.accounts, db.quickAdds], async () => {
+  await db.transaction('rw', [db.settings, db.categories, db.accounts], async () => {
     const existing = await db.settings.get('main');
     if (existing) return;
     const categories = buildDefaultCategories();
     const accounts = buildDefaultAccounts();
     await db.categories.bulkAdd(categories);
     await db.accounts.bulkAdd(accounts);
-    await db.quickAdds.bulkAdd(buildDefaultQuickAdds(categories));
     await db.settings.add({ ...defaultSettings(), defaultAccountId: accounts[0].id });
+  });
+}
+
+/**
+ * Simplification « un seul compte » : les comptes secondaires vides (Livret A, Espèces créés
+ * par défaut autrefois) sont supprimés ; ceux qui ont des opérations sont archivés (rien n'est perdu).
+ */
+export async function simplifyToSingleAccount(): Promise<void> {
+  await db.transaction('rw', [db.accounts, db.transactions, db.settings], async () => {
+    const settings = await db.settings.get('main');
+    const accounts = await db.accounts.toArray();
+    if (!settings || accounts.length <= 1) return;
+    const main = accounts.find((a) => a.id === settings.defaultAccountId) ?? accounts.find((a) => a.type === 'courant') ?? accounts[0];
+    if (settings.defaultAccountId !== main.id) await db.settings.update('main', { defaultAccountId: main.id });
+    for (const a of accounts) {
+      if (a.id === main.id) continue;
+      const used = (await db.transactions.where('accountId').equals(a.id).count()) + (await db.transactions.filter((t) => t.toAccountId === a.id).count());
+      if (used) await db.accounts.update(a.id, { archived: true });
+      else await db.accounts.delete(a.id);
+    }
   });
 }
 
@@ -184,30 +190,6 @@ export async function unskipOccurrence(id: ID, date: ISODate): Promise<void> {
   });
 }
 
-// ---------- Comptes ----------
-
-export async function saveAccount(a: Omit<Account, 'id' | 'createdAt' | 'order'> & { id?: ID }): Promise<void> {
-  if (a.id) {
-    await db.accounts.update(a.id, a);
-    return;
-  }
-  const order = await db.accounts.count();
-  await db.accounts.add({ ...a, id: uid(), order, createdAt: Date.now() });
-}
-
-/** Supprime le compte s'il est vide, sinon l'archive. Retourne l'action effectuée. */
-export async function removeAccount(id: ID): Promise<'deleted' | 'archived'> {
-  const used =
-    (await db.transactions.where('accountId').equals(id).count()) +
-    (await db.transactions.filter((t) => t.toAccountId === id).count());
-  if (used > 0) {
-    await db.accounts.update(id, { archived: true });
-    return 'archived';
-  }
-  await db.accounts.delete(id);
-  return 'deleted';
-}
-
 // ---------- Catégories ----------
 
 export async function saveCategory(c: Omit<Category, 'id' | 'order'> & { id?: ID }): Promise<void> {
@@ -237,79 +219,6 @@ export async function reorderCategories(ids: ID[]): Promise<void> {
   await db.transaction('rw', db.categories, async () => {
     await Promise.all(ids.map((id, order) => db.categories.update(id, { order })));
   });
-}
-
-// ---------- Objectifs ----------
-
-export async function saveGoal(g: Omit<Goal, 'id' | 'createdAt'> & { id?: ID }): Promise<ID> {
-  if (g.id) {
-    await db.goals.update(g.id, g);
-    return g.id;
-  }
-  const id = uid();
-  await db.goals.add({ ...g, id, createdAt: Date.now() });
-  return id;
-}
-
-export async function deleteGoal(id: ID): Promise<void> {
-  await db.transaction('rw', [db.goals, db.contributions], async () => {
-    await db.goals.delete(id);
-    await db.contributions.where('goalId').equals(id).delete();
-  });
-}
-
-export async function addContribution(c: Omit<GoalContribution, 'id' | 'createdAt'>): Promise<void> {
-  await db.contributions.add({ ...c, id: uid(), createdAt: Date.now() });
-}
-
-export async function deleteContribution(id: ID): Promise<void> {
-  await db.contributions.delete(id);
-}
-
-// ---------- Dépenses partagées ----------
-
-export async function saveGroup(g: Omit<SharedGroup, 'id' | 'createdAt'> & { id?: ID }): Promise<ID> {
-  if (g.id) {
-    await db.groups.update(g.id, g);
-    return g.id;
-  }
-  const id = uid();
-  await db.groups.add({ ...g, id, createdAt: Date.now() });
-  return id;
-}
-
-export async function deleteGroup(id: ID): Promise<void> {
-  await db.transaction('rw', [db.groups, db.sharedExpenses], async () => {
-    await db.groups.delete(id);
-    await db.sharedExpenses.where('groupId').equals(id).delete();
-  });
-}
-
-export async function saveSharedExpense(e: Omit<SharedExpense, 'id' | 'createdAt'> & { id?: ID }): Promise<void> {
-  if (e.id) {
-    await db.sharedExpenses.update(e.id, e);
-    return;
-  }
-  await db.sharedExpenses.add({ ...e, id: uid(), createdAt: Date.now() });
-}
-
-export async function deleteSharedExpense(id: ID): Promise<void> {
-  await db.sharedExpenses.delete(id);
-}
-
-// ---------- Raccourcis ----------
-
-export async function saveQuickAdd(q: Omit<QuickAdd, 'id' | 'order'> & { id?: ID }): Promise<void> {
-  if (q.id) {
-    await db.quickAdds.update(q.id, q);
-    return;
-  }
-  const order = await db.quickAdds.count();
-  await db.quickAdds.add({ ...q, id: uid(), order });
-}
-
-export async function deleteQuickAdd(id: ID): Promise<void> {
-  await db.quickAdds.delete(id);
 }
 
 // ---------- Sauvegarde / import / réinitialisation ----------

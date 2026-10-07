@@ -1,39 +1,19 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Area,
-  AreaChart,
-} from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Screen } from '../../components/Screen';
-import { Card, IconButton, List, Money, Section, Segmented } from '../../components/ui';
+import { Card, IconButton, List, Money, ProgressBar, Section, levelColor } from '../../components/ui';
 import { Icon } from '../../components/Icon';
+import { AmountSheet } from '../../components/AmountSheet';
 import { useData } from '../../hooks/useData';
-import { useTxSheet } from '../../stores/ui';
-import { addDays, diffDays, formatMonthShort, formatShortDate, inPeriod, periodLabel, shiftPeriod } from '../../lib/dates';
+import { useNav } from '../../stores/nav';
+import { toast, useTxSheet } from '../../stores/ui';
+import { addDays, diffDays, formatMonthShort, formatShortDate, periodLabel, shiftPeriod } from '../../lib/dates';
 import { formatMoney } from '../../lib/money';
-import { incomeBySource } from '../../lib/budget';
-import { INCOME_SOURCE_LABEL } from '../../db/defaults';
-import {
-  averagePerDay,
-  balanceSeries,
-  compareWithPrevious,
-  cumulativeSpending,
-  periodHistory,
-  topExpenses,
-  totalsByCategory,
-  totalsForPeriod,
-} from '../../lib/stats';
+import { budgetLevel } from '../../lib/budget';
+import { averageMonthlyByCategory } from '../../lib/simulator';
+import { averagePerDay, cumulativeSpending, periodHistory, topExpenses, totalsByCategory, totalsForPeriod } from '../../lib/stats';
+import { setCategoryBudget } from '../../db/actions';
+import type { Category } from '../../types';
 
 const AXIS = { fontSize: 11, fill: 'var(--label-2)' };
 const euros = (c: number) => formatMoney(c, { compact: true }).replace(/[  ]/g, ' ');
@@ -42,7 +22,17 @@ const shortEuros = (c: number) => {
   return Math.abs(v) >= 1000 ? `${(v / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} k€` : `${Math.round(v)} €`;
 };
 
-function ChartTooltip({ active, payload, label, labelFormat }: { active?: boolean; payload?: { name?: string; value?: number; color?: string; payload?: Record<string, unknown> }[]; label?: string | number; labelFormat?: (l: string | number) => string }) {
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  labelFormat,
+}: {
+  active?: boolean;
+  payload?: { name?: string; value?: number; color?: string }[];
+  label?: string | number;
+  labelFormat?: (l: string | number) => string;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-separator bg-elevated px-3 py-2 text-[13px] shadow-lg">
@@ -62,7 +52,10 @@ function Legend({ items }: { items: { label: string; color: string; dashed?: boo
     <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-label-2">
       {items.map((i) => (
         <span key={i.label} className="flex items-center gap-1.5">
-          <span className="h-[3px] w-4 rounded-full" style={{ background: i.dashed ? `repeating-linear-gradient(90deg, ${i.color} 0 4px, transparent 4px 7px)` : i.color }} />
+          <span
+            className="h-[3px] w-4 rounded-full"
+            style={{ background: i.dashed ? `repeating-linear-gradient(90deg, ${i.color} 0 4px, transparent 4px 7px)` : i.color }}
+          />
           {i.label}
         </span>
       ))}
@@ -74,19 +67,20 @@ function ChartCard({ title, children, subtitle }: { title: string; subtitle?: Re
   return (
     <Section title={title}>
       <Card className="p-4">
-        {subtitle && <div className="mb-2 text-[14px] text-label-2">{subtitle}</div>}
+        {subtitle && <div className="mb-3 text-[14px] text-label-2">{subtitle}</div>}
         {children}
       </Card>
     </Section>
   );
 }
 
+/** Analyse : le mois en chiffres, les catégories et leurs budgets, les tendances, le simulateur. */
 export default function StatsScreen() {
-  const { transactions, accounts, categories, categoryById, period: current, today, settings } = useData();
+  const { transactions, categories, categoryById, period: current, today, settings } = useData();
   const openEdit = useTxSheet((s) => s.openEdit);
+  const push = useNav((s) => s.push);
   const [offset, setOffset] = useState(0);
-  const [selectedSlice, setSelectedSlice] = useState<string | null>(null);
-  const [balanceRange, setBalanceRange] = useState<'30' | '90' | '365'>('90');
+  const [editing, setEditing] = useState<Category | null>(null);
   const startDay = settings.monthStartDay;
 
   const period = useMemo(() => shiftPeriod(current, offset, startDay), [current, offset, startDay]);
@@ -95,39 +89,38 @@ export default function StatsScreen() {
 
   const totals = useMemo(() => totalsForPeriod(transactions, period), [transactions, period]);
   const byCat = useMemo(() => totalsByCategory(transactions, period), [transactions, period]);
+  const incomeByCat = useMemo(() => totalsByCategory(transactions, period, 'income'), [transactions, period]);
   const history = useMemo(() => periodHistory(transactions, period, 6, startDay), [transactions, period, startDay]);
   const top = useMemo(() => topExpenses(transactions, period, 5), [transactions, period]);
-  const sources = useMemo(() => incomeBySource(transactions, categories, period), [transactions, categories, period]);
+  const averages = useMemo(() => averageMonthlyByCategory(transactions, today), [transactions, today]);
 
   const daysElapsed = isCurrent ? diffDays(period.start, today) + 1 : diffDays(period.start, period.end) + 1;
   const avgDay = averagePerDay(totals.expense, daysElapsed);
-  // Mois en cours : on compare à la même date du mois précédent (pas au mois complet)
+  // Mois en cours : comparaison à la même date du mois précédent (pas au mois complet)
   const prevTotals = useMemo(
     () => totalsForPeriod(transactions, isCurrent ? { start: previous.start, end: addDays(previous.start, daysElapsed - 1) } : previous),
     [transactions, previous, isCurrent, daysElapsed],
   );
-  const vsLabel = isCurrent ? `vs ${formatMonthShort(previous.start)} à date` : 'vs mois préc.';
-  const comparison = useMemo(
-    () =>
-      isCurrent
-        ? compareWithPrevious(transactions, { start: period.start, end: today }, { start: previous.start, end: addDays(previous.start, daysElapsed - 1) })
-        : compareWithPrevious(transactions, period, previous),
-    [transactions, period, previous, isCurrent, today, daysElapsed],
-  );
+  const vsLabel = isCurrent ? `vs ${formatMonthShort(previous.start)} à la même date` : 'vs mois précédent';
 
-  // Camembert : 6 premières catégories + "Autres" (au-delà, les couleurs ne se distinguent plus)
+  // Catégories : dépensé + budget. Le camembert garde 6 parts + « Autres » pour rester lisible.
+  const spentMap = useMemo(() => new Map(byCat.map((c) => [c.categoryId, c.total])), [byCat]);
+  const expenseCats = useMemo(
+    () =>
+      categories
+        .filter((c) => c.kind === 'expense' && !c.archived)
+        .sort((a, b) => (spentMap.get(b.id) ?? 0) - (spentMap.get(a.id) ?? 0) || a.order - b.order),
+    [categories, spentMap],
+  );
   const pieData = useMemo(() => {
-    const main = byCat.slice(0, 6).map((c) => {
-      const cat = categoryById.get(c.categoryId);
-      return { id: c.categoryId, name: cat?.name ?? 'Sans catégorie', emoji: cat?.emoji ?? '❔', color: cat?.color ?? '#8D8D8D', value: c.total };
-    });
+    const main = byCat.slice(0, 6).map((c) => ({ id: c.categoryId, color: categoryById.get(c.categoryId)?.color ?? '#8D8D8D', value: c.total }));
     const rest = byCat.slice(6).reduce((s, c) => s + c.total, 0);
-    if (rest > 0) main.push({ id: '__other', name: 'Autres', emoji: '➕', color: '#8D8D8D', value: rest });
+    if (rest > 0) main.push({ id: '__other', color: '#8D8D8D', value: rest });
     return main;
   }, [byCat, categoryById]);
-  const selected = pieData.find((p) => p.id === selectedSlice);
+  const sliceColor = (id: string) => pieData.find((p) => p.id === id)?.color ?? (spentMap.get(id) ? '#8D8D8D' : 'transparent');
 
-  // Comparaison des dépenses cumulées avec le mois précédent
+  // Rythme : dépenses cumulées comparées au mois précédent
   const cumul = useMemo(() => {
     const cur = cumulativeSpending(transactions, period, isCurrent ? today : undefined);
     const prev = cumulativeSpending(transactions, previous);
@@ -137,111 +130,106 @@ export default function StatsScreen() {
   const samePointPrev = cumul[Math.min(daysElapsed, cumul.length) - 1]?.previous ?? 0;
   const paceDelta = (cumul[daysElapsed - 1]?.current ?? totals.expense) - samePointPrev;
 
-  const balance = useMemo(() => {
-    const days = Number(balanceRange);
-    const series = balanceSeries(accounts.filter((a) => !a.archived), transactions, addDays(today, -days + 1), today);
-    const step = days > 120 ? 7 : 1;
-    return series.filter((_, i) => i % step === 0 || i === series.length - 1);
-  }, [accounts, transactions, today, balanceRange]);
-
   const historyData = history.map((h) => ({ label: formatMonthShort(h.period.start), Revenus: h.income, Dépenses: h.expense }));
 
   return (
     <Screen title="Analyse">
-      {/* Navigation de période */}
-      <div className="mb-4 flex items-center justify-between rounded-2xl bg-card px-1">
+      {/* Choix du mois */}
+      <div className="mb-4 flex items-center justify-between rounded-2xl bg-card px-1 shadow-card">
         <IconButton icon="chevronLeft" label="Mois précédent" onClick={() => setOffset(offset - 1)} />
         <span className="text-[16px] font-semibold">{periodLabel(period)}</span>
         <IconButton icon="chevronRight" label="Mois suivant" onClick={() => setOffset(offset + 1)} disabled={offset >= 0} className="disabled:opacity-30" />
       </div>
 
+      {/* Le mois en chiffres */}
       <Card className="mb-7 p-5">
-        <p className="text-[13px] text-label-2">Dépensé</p>
+        <p className="text-[13px] text-label-2">Dépenses</p>
         <p className="mt-0.5 text-[32px] leading-tight font-semibold tracking-[-0.03em] tabular">{formatMoney(totals.expense)}</p>
-        <Delta current={totals.expense} previous={prevTotals.expense} invert label={vsLabel} />
+        <Delta current={totals.expense} previous={prevTotals.expense} label={vsLabel} />
         <div className="mt-4 grid grid-cols-3 divide-x divide-separator border-t border-separator pt-3.5 text-center">
-          <div className="px-2">
-            <p className="text-[12px] text-label-2">Revenus</p>
-            <Money cents={totals.income} compact className="text-[16px] font-semibold" />
-          </div>
-          <div className="px-2">
-            <p className="text-[12px] text-label-2">Par jour</p>
-            <Money cents={avgDay} compact className="text-[16px] font-semibold" />
-          </div>
-          <div className="px-2">
-            <p className="text-[12px] text-label-2">Épargné</p>
-            <Money cents={totals.net} compact className={`text-[16px] font-semibold ${totals.net < 0 ? 'text-negative' : ''}`} />
-          </div>
+          <SmallMetric label="Revenus" value={<Money cents={totals.income} compact />} />
+          <SmallMetric label="Par jour" value={<Money cents={avgDay} compact />} />
+          <SmallMetric
+            label="Solde"
+            hint="revenus − dépenses"
+            value={<Money cents={totals.net} compact className={totals.net < 0 ? 'text-negative' : ''} />}
+          />
         </div>
       </Card>
 
-      {/* Camembert par catégorie */}
-      <ChartCard title="Dépenses par catégorie">
-        {pieData.length === 0 ? (
-          <p className="py-6 text-center text-[15px] text-label-2">Aucune dépense sur cette période.</p>
-        ) : (
-          <>
-            <div className="relative mx-auto h-[220px] w-full max-w-[260px]">
+      {/* Catégories et budgets */}
+      <Section title="Par catégorie" footer="Touche une catégorie pour fixer ou modifier son budget mensuel.">
+        <Card className="overflow-hidden">
+          {pieData.length > 0 && (
+            <div className="relative mx-auto h-[200px] w-full max-w-[240px] pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius="62%"
-                    outerRadius="96%"
-                    paddingAngle={0}
-                    stroke="var(--card)"
-                    strokeWidth={2}
-                    startAngle={90}
-                    endAngle={-270}
-                    isAnimationActive
-                    onClick={(_, i) => setSelectedSlice(pieData[i]?.id === selectedSlice ? null : (pieData[i]?.id ?? null))}
-                  >
+                  <Pie data={pieData} dataKey="value" innerRadius="66%" outerRadius="98%" stroke="var(--card)" strokeWidth={2} startAngle={90} endAngle={-270}>
                     {pieData.map((d) => (
-                      <Cell key={d.id} fill={d.color} opacity={selectedSlice && selectedSlice !== d.id ? 0.35 : 1} />
+                      <Cell key={d.id} fill={d.color} />
                     ))}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-[13px] text-label-2">{selected ? `${selected.emoji} ${selected.name}` : 'Total'}</span>
-                <span className="text-[20px] font-bold tabular">{euros(selected ? selected.value : totals.expense)}</span>
-                {selected && <span className="text-[12px] text-label-2">{Math.round((selected.value / totals.expense) * 100)} %</span>}
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-4 text-center">
+                <span className="text-[12px] text-label-2">Total</span>
+                <span className="text-[18px] font-semibold tabular">{euros(totals.expense)}</span>
               </div>
             </div>
-            {/* Légende-tableau : l'identité ne repose jamais sur la seule couleur */}
-            <div className="mt-3">
-              {pieData.map((d) => (
+          )}
+          <div className="mt-2">
+            {expenseCats.map((c) => {
+              const spent = spentMap.get(c.id) ?? 0;
+              const budget = c.budget ?? 0;
+              const pct = budget ? (spent / budget) * 100 : 0;
+              const level = budget ? budgetLevel(pct) : 'ok';
+              return (
                 <button
-                  key={d.id}
-                  onClick={() => setSelectedSlice(d.id === selectedSlice ? null : d.id)}
-                  aria-pressed={selectedSlice === d.id}
-                  className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg px-1 text-left ${selectedSlice === d.id ? 'bg-fill' : ''}`}
+                  key={c.id}
+                  onClick={() => setEditing(c)}
+                  className={`flex w-full items-center gap-3 border-t border-separator px-4 py-3 text-left active:bg-fill ${spent || budget ? '' : 'opacity-50'}`}
                 >
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: d.color }} />
-                  <span className="text-[17px]">{d.emoji}</span>
-                  <span className="flex-1 truncate text-[15px]">{d.name}</span>
-                  <span className="text-[13px] text-label-2 tabular">{Math.round((d.value / totals.expense) * 100)} %</span>
-                  <span className="w-20 text-right text-[15px] font-semibold tabular">{euros(d.value)}</span>
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-fill text-[17px]" aria-hidden="true">
+                    {c.emoji}
+                    <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card" style={{ background: sliceColor(c.id) }} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-[15px] font-medium">{c.name}</span>
+                      <span className="shrink-0 text-[15px] tabular">
+                        <span className="font-semibold">{euros(spent)}</span>
+                        {budget > 0 && <span className="text-label-2"> / {euros(budget)}</span>}
+                      </span>
+                    </span>
+                    {budget > 0 && (
+                      <>
+                        <ProgressBar pct={pct} height={5} className="mt-1.5" label={`Budget ${c.name}`} />
+                        {level !== 'ok' && (
+                          <span className="mt-1 block text-[12px]" style={{ color: levelColor(pct) }}>
+                            {level === 'over' ? `Dépassé de ${euros(spent - budget)}` : `Reste ${euros(budget - spent)}`}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </span>
                 </button>
-              ))}
-            </div>
-          </>
-        )}
-      </ChartCard>
+              );
+            })}
+          </div>
+        </Card>
+      </Section>
 
-      {/* Rythme vs mois précédent */}
+      {/* Rythme */}
       <ChartCard
-        title="Comparaison avec le mois précédent"
+        title="Rythme de dépenses"
         subtitle={
           samePointPrev > 0 ? (
             <>
-              À ce stade du mois, tu as dépensé{' '}
+              À cette date, tu as dépensé{' '}
               <strong className={paceDelta > 0 ? 'text-negative' : 'text-positive'}>
                 {euros(Math.abs(paceDelta))} {paceDelta > 0 ? 'de plus' : 'de moins'}
               </strong>{' '}
-              que le mois dernier.
+              que le mois précédent.
             </>
           ) : (
             'Pas encore de données le mois précédent.'
@@ -254,7 +242,7 @@ export default function StatsScreen() {
             { label: periodLabel(previous), color: 'var(--series-2)', dashed: true },
           ]}
         />
-        <div className="h-[180px]">
+        <div className="h-[170px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={cumul} margin={{ top: 6, right: 6, bottom: 0, left: -12 }}>
               <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
@@ -266,29 +254,9 @@ export default function StatsScreen() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        {comparison.length > 0 && (
-          <div className="mt-3 border-t border-separator pt-2">
-            {comparison.slice(0, 5).map((c) => {
-              const cat = categoryById.get(c.categoryId);
-              return (
-                <div key={c.categoryId} className="flex min-h-10 items-center gap-2 text-[15px]">
-                  <span>{cat?.emoji ?? '❔'}</span>
-                  <span className="flex-1 truncate">{cat?.name ?? 'Sans catégorie'}</span>
-                  <span className="text-[13px] text-label-2 tabular">
-                    {euros(c.previous)} → {euros(c.current)}
-                  </span>
-                  <span className={`flex w-20 items-center justify-end gap-0.5 font-semibold tabular ${c.delta > 0 ? 'text-negative' : c.delta < 0 ? 'text-positive' : 'text-label-2'}`}>
-                    <Icon name={c.delta > 0 ? 'arrowUp' : 'arrowDown'} size={13} strokeWidth={2.6} />
-                    {c.deltaPct == null ? 'nouveau' : `${Math.abs(Math.round(c.deltaPct))} %`}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </ChartCard>
 
-      {/* Barres mois par mois */}
+      {/* 6 derniers mois */}
       <ChartCard title="6 derniers mois">
         <Legend
           items={[
@@ -296,7 +264,7 @@ export default function StatsScreen() {
             { label: 'Dépenses', color: 'var(--series-2)' },
           ]}
         />
-        <div className="h-[200px]">
+        <div className="h-[190px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={historyData} margin={{ top: 6, right: 6, bottom: 0, left: -12 }} barGap={2} barCategoryGap="22%">
               <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
@@ -310,92 +278,113 @@ export default function StatsScreen() {
         </div>
       </ChartCard>
 
-      {/* Évolution du solde */}
-      <ChartCard title="Évolution du solde (tous comptes)">
-        <Segmented
-          label="Période du graphique"
-          className="mb-3"
-          value={balanceRange}
-          onChange={setBalanceRange}
-          options={[
-            { value: '30', label: '30 j' },
-            { value: '90', label: '3 mois' },
-            { value: '365', label: '1 an' },
-          ]}
-        />
-        <div className="h-[180px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={balance} margin={{ top: 6, right: 6, bottom: 0, left: -12 }}>
-              <defs>
-                <linearGradient id="balFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="var(--series-1)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-              <XAxis dataKey="date" tick={AXIS} tickLine={false} axisLine={false} tickFormatter={(d: string) => formatShortDate(d)} minTickGap={40} />
-              <YAxis tick={AXIS} tickLine={false} axisLine={false} tickFormatter={shortEuros} width={52} domain={['auto', 'auto']} />
-              <Tooltip content={<ChartTooltip labelFormat={(l) => formatShortDate(String(l), today)} />} cursor={{ stroke: 'var(--label-3)', strokeWidth: 1 }} />
-              <Area type="monotone" dataKey="balance" name="Solde" stroke="var(--series-1)" strokeWidth={2} fill="url(#balFill)" activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--card)' }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </ChartCard>
-
-      {/* Revenus par source */}
-      {Object.keys(sources).length > 0 && (
-        <Section title="Revenus par source">
+      {/* Revenus */}
+      {incomeByCat.length > 0 && (
+        <Section title="Revenus">
           <List>
-            {Object.entries(sources)
-              .sort((a, b) => b[1] - a[1])
-              .map(([src, v]) => (
-                <div key={src} className="relative flex min-h-12 items-center justify-between px-4">
-                  <span className="text-[16px]">{INCOME_SOURCE_LABEL[src] ?? src}</span>
-                  <span className="flex items-center gap-3">
-                    <span className="text-[13px] text-label-2">{Math.round((v / totals.income) * 100)} %</span>
-                    <Money cents={v} className="font-semibold" />
+            {incomeByCat.map((c) => {
+              const cat = categoryById.get(c.categoryId);
+              return (
+                <div key={c.categoryId} className="relative flex min-h-[52px] items-center gap-3 px-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-fill text-[17px]" aria-hidden="true">
+                    {cat?.emoji ?? '💶'}
                   </span>
+                  <span className="flex-1 truncate text-[15px]">{cat?.name ?? 'Revenu'}</span>
+                  <Money cents={c.total} className="text-[15px] font-semibold" />
                 </div>
-              ))}
+              );
+            })}
           </List>
         </Section>
       )}
 
-      {/* Top dépenses */}
+      {/* Plus grosses dépenses */}
       {top.length > 0 && (
-        <Section title="Top 5 des dépenses">
+        <Section title="Plus grosses dépenses">
           <List>
-            {top.map((t, i) => {
+            {top.map((t) => {
               const cat = t.categoryId ? categoryById.get(t.categoryId) : undefined;
               return (
-                <button key={t.id} onClick={() => openEdit(t)} className="relative flex min-h-[52px] w-full items-center gap-3 px-4 text-left active:bg-fill">
-                  <span className="w-5 text-[15px] font-bold text-label-3">{i + 1}</span>
-                  <span className="text-[19px]">{cat?.emoji ?? '💸'}</span>
+                <button key={t.id} onClick={() => openEdit(t)} className="relative flex min-h-[56px] w-full items-center gap-3 px-4 text-left active:bg-fill">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-fill text-[17px]" aria-hidden="true">
+                    {cat?.emoji ?? '💸'}
+                  </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[16px]">{t.note || cat?.name}</span>
+                    <span className="block truncate text-[15px] font-medium">{t.note || cat?.name}</span>
                     <span className="block text-[13px] text-label-2">{formatShortDate(t.date, today)}</span>
                   </span>
-                  <Money cents={-t.amount} className="font-semibold" />
+                  <Money cents={-t.amount} className="text-[15px] font-semibold" />
                 </button>
               );
             })}
           </List>
         </Section>
       )}
-      {!inPeriod(today, period) && totals.expense === 0 && totals.income === 0 && (
-        <p className="text-center text-[15px] text-label-2">Aucune donnée pour cette période.</p>
-      )}
+
+      {/* Simulateur */}
+      <Section title="Et si… ?">
+        <Card onClick={() => push('simulator')} className="flex items-center gap-4 p-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-accent-soft text-accent" aria-hidden="true">
+            <Icon name="calculator" size={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold">Simulateur d'économies</span>
+            <span className="block text-[13px] text-label-2">Moins de restos, un abonnement en moins… combien sur un an ?</span>
+          </span>
+          <Icon name="chevronRight" size={18} className="text-label-3" />
+        </Card>
+      </Section>
+
+      <AmountSheet
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title={editing ? `Budget ${editing.name}` : ''}
+        initial={editing?.budget ?? null}
+        onSave={async (cents) => {
+          if (!editing) return;
+          await setCategoryBudget(editing.id, cents);
+          toast(`Budget ${editing.name} : ${formatMoney(cents)} par mois`, { tone: 'success' });
+        }}
+        onClear={editing?.budget ? async () => void (await setCategoryBudget(editing.id, null)) : undefined}
+        clearLabel="Retirer"
+        saveLabel="Définir le budget"
+      >
+        {editing && (
+          <div className="space-y-1 text-center text-[14px] text-label-2">
+            <p>Plafond mensuel pour {editing.emoji} {editing.name}</p>
+            <p>
+              Ce mois-ci : <strong className="text-label">{formatMoney(spentMap.get(editing.id) ?? 0)}</strong>
+              {averages.get(editing.id) ? (
+                <>
+                  {' '}
+                  · moyenne : <strong className="text-label">{formatMoney(averages.get(editing.id)!)}</strong>/mois
+                </>
+              ) : null}
+            </p>
+          </div>
+        )}
+      </AmountSheet>
     </Screen>
   );
 }
 
-function Delta({ current, previous, invert, label }: { current: number; previous: number; invert?: boolean; label: string }) {
-  if (!previous) return <p className="text-[12px] text-label-2">{label} : —</p>;
+function SmallMetric({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+  return (
+    <div className="min-w-0 px-2">
+      <p className="text-[12px] text-label-2">{label}</p>
+      <p className="truncate text-[16px] font-semibold">{value}</p>
+      {hint && <p className="truncate text-[10px] text-label-3">{hint}</p>}
+    </div>
+  );
+}
+
+function Delta({ current, previous, label }: { current: number; previous: number; label: string }) {
+  if (!previous) return <p className="mt-1 text-[13px] text-label-2">Pas de comparaison disponible</p>;
   const pct = ((current - previous) / previous) * 100;
-  const good = invert ? pct <= 0 : pct >= 0;
+  const less = pct <= 0;
   return (
     <p className="mt-1 flex items-center gap-1 text-[13px] text-label-2">
-      <span className={`inline-flex items-center gap-0.5 font-medium ${good ? 'text-positive' : 'text-negative'}`}>
+      <span className={`inline-flex items-center gap-0.5 font-medium ${less ? 'text-positive' : 'text-negative'}`}>
         <Icon name={pct >= 0 ? 'arrowUp' : 'arrowDown'} size={12} strokeWidth={2.6} />
         {Math.abs(Math.round(pct))} %
       </span>

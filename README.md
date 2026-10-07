@@ -30,28 +30,19 @@ Application de gestion de budget pour étudiant, pensée pour l'iPhone : **PWA i
 
 ## Fonctionnalités
 
+L'appli tient en **deux onglets et un bouton** : *Accueil*, *+* et *Analyse*. Tout passe par un seul compte : le compte courant.
+
 | | |
 |---|---|
-| **Tableau de bord** | Reste à vivre, budget par jour jusqu'à la fin du mois, jauge des revenus engagés, solde du mois, dépenses du jour, prévision de fin de mois au rythme actuel, échéances à venir, objectifs, dernières opérations. Touche la carte violette pour le détail du calcul. |
-| **Saisie express** | Bouton **+** → pavé numérique intégré → catégorie (pré-sélection de ta catégorie la plus fréquente) → **Ajouter**. Date (aujourd'hui / hier / autre), compte, note, et option « Répéter ». |
-| **Paiements Apple Pay automatiques** | Une automatisation de l'app Raccourcis (déclencheur « Transaction ») envoie chaque paiement Apple Pay, en arrière-plan, à un **relais privé** (Cloudflare Worker, dossier `relay/`). Budget récupère les paiements en attente à l'ouverture et toutes les 15 s, à la date du paiement, catégorie devinée d'après le commerçant (corrections retenues), sans doublon. Guide pas à pas dans **Plus → Paiements Apple Pay**. |
-| **Ajout en 1 tap** | Raccourcis personnalisables (café, ticket de bus, courses…) sur l'accueil, avec **Annuler** pendant 5 s. |
-| **Opérations** | Regroupées par jour avec total quotidien, recherche (note, catégorie ou montant exact), filtres (période, type, catégories, compte, montant min/max). **Glisser vers la gauche** pour supprimer, avec annulation. Toucher pour modifier. |
-| **Catégories** | Personnalisables (nom, emoji, couleur, ordre). 10 catégories de dépenses et 5 de revenus par défaut. Une catégorie utilisée est archivée au lieu d'être supprimée. |
-| **Budgets** | Plafond mensuel par catégorie, barre de progression, repère du jour du mois, alertes à **80 %** (orange) et **100 %** (rouge), en toast et en notification. |
-| **Récurrences** | Loyer, abonnements, APL, bourse, salaire, virement des parents… Hebdo / mensuel / annuel (toutes les N périodes), date de fin, **pause**, **sauter une échéance** (et la rétablir). Générées automatiquement le jour J. |
-| **Revenus** | Suivi séparé par source : job/salaire, aides, bourse, famille, autre. |
-| **Comptes** | Courant, épargne, Livret A, espèces… Soldes par compte, patrimoine total, **virements entre comptes**, compte par défaut, archivage. |
-| **Objectifs d'épargne** | Montant et date cibles, **versement mensuel conseillé**, estimation de la date d'atteinte au rythme des 3 derniers mois, versements et retraits. |
-| **Abonnements** | Coût mensuel et annuel total, prochaine échéance, rappel N jours avant, ajout rapide (Netflix, Spotify…), **export des rappels vers le Calendrier iPhone**. |
-| **Dépenses partagées** | Groupes (coloc, voyage), dépenses réparties à parts égales au centime près, soldes, **remboursements minimaux** (au plus n − 1 virements), « Ajouter ma part à mes dépenses ». |
-| **Statistiques** | Camembert par catégorie, dépenses cumulées comparées au mois précédent **à la même date**, barres revenus/dépenses sur 6 mois, courbe du solde (30 j / 3 mois / 1 an), variations par catégorie, top 5, moyenne par jour, revenus par source. |
-| **Simulateur « et si ? »** | Réduire une catégorie (en € ou en %), résilier des abonnements, gagner plus : économies par mois, an et 2 ou 5 ans, et **impact sur tes objectifs** (mois gagnés). |
-| **Notifications** | Alertes de budget, renouvellements d'abonnements, rappel quotidien (voir limites). Rappel quotidien **fiable via le Calendrier** (.ics). |
-| **Sécurité** | Code PIN à 4 chiffres (haché PBKDF2), **Face ID / Touch ID** via WebAuthn, verrouillage automatique réglable, blocage 30 s après 5 erreurs. |
-| **Onboarding** | 3 écrans : revenus (avec le jour de versement), loyer et solde actuel, catégories. Ou **données exemple** en un tap. |
-| **Réglages** | Devise, premier jour du mois budgétaire, thème auto/clair/sombre, retour haptique, compte par défaut, export/import, réinitialisation. |
-| **Confort iOS** | Tab bar, feuilles modales à tirer vers le bas, glisser depuis le bord gauche pour revenir, grands titres, safe areas (encoche et barre d'accueil), retour haptique (iOS 18+), mode sombre, « Réduire les animations » respecté, cibles tactiles ≥ 44 px. |
+| **Accueil** | Reste à vivre, budget par jour jusqu'à la fin du mois, part des revenus engagée, dépensé / aujourd'hui / prévision de fin de mois, alerte budget si besoin, échéances à venir, puis **toutes les opérations du mois** regroupées par jour. En haut : 🔍 recherche et ⚙︎ réglages. |
+| **Ajout (+)** | Dépense ou revenu : pavé numérique intégré, catégorie pré-sélectionnée (la plus fréquente), date, note, option « Répéter ». |
+| **Paiements Apple Pay automatiques** | Une automatisation Raccourcis (déclencheur « Wallet ») envoie chaque paiement Apple Pay à un **relais privé** (Cloudflare Worker, dossier `relay/`). Budget l'ajoute à l'ouverture, catégorie devinée d'après le commerçant (corrections retenues), sans doublon. Guide dans **Réglages → Paiements Apple Pay**. |
+| **Opérations** | Toucher pour modifier, **glisser vers la gauche** pour supprimer (avec annulation). Recherche (commerçant, catégorie, montant) et filtres (période, type, catégories, montant). |
+| **Analyse** | Le mois en chiffres (dépenses, comparaison au mois précédent à la même date, revenus, moyenne par jour, solde), **catégories avec leurs budgets** (toucher une catégorie pour fixer un plafond ; alertes à 80 % et 100 %), rythme de dépenses comparé au mois précédent, 6 derniers mois, revenus par source, plus grosses dépenses. |
+| **Simulateur « Et si ? »** | Réduire une catégorie (en € ou en %), résilier des abonnements, gagner plus : économies par mois, par an, sur 2 ou 5 ans. Accessible depuis l'Analyse. |
+| **Revenus et charges fixes** | Salaire, APL, bourse, parents, loyer, abonnements… Hebdo / mensuel / annuel, pause, **sauter une échéance**, total des abonnements par mois et par an. Ajoutés automatiquement le jour J. |
+| **Réglages** | Revenus et charges fixes, catégories (nom, emoji, couleur), Apple Pay, début du mois budgétaire, devise, thème, code PIN + Face ID, notifications, sauvegarde / import / export CSV, données exemple, réinitialisation. |
+| **Confort iOS** | Feuilles à tirer vers le bas, glisser depuis le bord gauche pour revenir, safe areas, mode sombre, retour haptique (iOS 18+), « Réduire les animations » respecté, cibles tactiles ≥ 44 px. |
 
 ## Comment sont faits les calculs
 
@@ -88,7 +79,7 @@ Prérequis : Node.js 20+ (testé avec Node 24).
 ```bash
 npm install
 npm run dev          # http://localhost:5173/budget-etudiant/
-npm test             # 141 tests unitaires (Vitest)
+npm test             # tests unitaires (Vitest)
 npm run build        # vérification TypeScript + build de production dans dist/
 npm run preview      # sert dist/ sur http://localhost:4173/budget-etudiant/
 npm run icons        # régénère les icônes PNG depuis scripts/icon.svg
@@ -98,9 +89,9 @@ Tests de bout en bout (Playwright, moteur **WebKit** = Safari, émulation iPhone
 
 ```bash
 npx playwright install webkit chromium
-node scripts/smoke.mjs        # parcours complet + 30 captures d'écran (serveur dev lancé)
-node scripts/flows.mjs        # scénarios avec assertions : édition, glisser-supprimer, filtres,
-                              # sauter une échéance, objectif, coloc, export/import, code PIN
+node scripts/screens.mjs <dossier>   # captures des écrans principaux (serveur dev lancé)
+node scripts/flows.mjs        # scénarios avec assertions : saisie, recherche, glisser-supprimer, budgets,
+                              # simulateur, sauter une échéance, export/import, code PIN
 node scripts/pwa-check.mjs <url> chromium   # manifest, icônes, meta iOS, service worker, hors ligne
 node scripts/applepay-check.mjs             # réception des paiements Apple Pay (appli installée et Safari)
 ```
@@ -118,7 +109,6 @@ src/
 │   ├── recurrence.ts      Échéances, sauts, génération, équivalents mensuels/annuels
 │   ├── budget.ts          Reste à vivre, prévision, budgets par catégorie, soldes
 │   ├── goals.ts           Progression, versement conseillé, date estimée
-│   ├── split.ts           Soldes de groupe, remboursements minimaux
 │   ├── stats.ts           Agrégations pour les graphiques
 │   ├── simulator.ts       Scénarios « et si ? »
 │   ├── merchant.ts        Paiements Apple Pay : lecture du lien, commerçant → catégorie

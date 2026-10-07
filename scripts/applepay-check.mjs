@@ -47,7 +47,7 @@ await page.goto(`${BASE}?applepay=${encodeURIComponent('abc|Test')}`);
 await page.getByText(/reçu mais illisible/).waitFor();
 ok('lien invalide signalé');
 
-await page.getByRole('navigation').getByRole('button', { name: 'Plus' }).click();
+await page.getByRole('button', { name: 'Réglages' }).click();
 await page.getByRole('button', { name: /Paiements Apple Pay/ }).click();
 await page.getByText('Actif', { exact: true }).first().waitFor();
 ok("écran de configuration : statut actif");

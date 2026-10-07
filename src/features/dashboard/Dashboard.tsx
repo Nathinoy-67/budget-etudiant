@@ -5,55 +5,28 @@ import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { useData } from '../../hooks/useData';
 import { useNav } from '../../stores/nav';
-import { toast, useTxSheet } from '../../stores/ui';
 import { categoryBudgets, computeSummary } from '../../lib/budget';
 import { formatMoney } from '../../lib/money';
-import { formatShortDate, inDaysLabel, periodLabel } from '../../lib/dates';
-import { haptic } from '../../lib/haptics';
-import { addTransaction, deleteTransaction } from '../../db/actions';
-import { checkBudgetAfterChange } from '../alerts';
-import { TxRow } from '../transactions/TxRow';
+import { formatShortDate, inDaysLabel, inPeriod, periodLabel } from '../../lib/dates';
+import { TxDayList } from '../transactions/TxDayList';
 import { BackupBanner } from '../settings/BackupBanner';
-import type { QuickAdd } from '../../types';
 
-/** Accueil : l'essentiel en un coup d'œil, sans surcharge. */
+/** Accueil : où j'en suis ce mois-ci, ce qui arrive, et toutes mes opérations du mois. */
 export function Dashboard() {
-  const data = useData();
-  const { transactions, recurrings, period, today, categories, quickAdds, settings, categoryById } = data;
-  const open = useNav((s) => s.open);
+  const { transactions, recurrings, period, today, categories, categoryById } = useData();
+  const push = useNav((s) => s.push);
   const setTab = useNav((s) => s.setTab);
-  const openNew = useTxSheet((s) => s.openNew);
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   const s = useMemo(() => computeSummary(transactions, recurrings, period, today), [transactions, recurrings, period, today]);
-  const budgets = useMemo(() => categoryBudgets(categories, transactions, period), [categories, transactions, period]);
-  const recent = transactions.filter((t) => t.date <= today).slice(0, 5);
-  const upcoming = s.upcoming.slice(0, 3);
-  const alerts = budgets.filter((b) => b.level !== 'ok');
+  const alerts = useMemo(() => categoryBudgets(categories, transactions, period).filter((b) => b.level !== 'ok'), [categories, transactions, period]);
+  const monthTx = useMemo(() => transactions.filter((t) => t.type !== 'transfer' && inPeriod(t.date, period)), [transactions, period]);
+  const upcoming = s.upcoming.filter((u) => u.type !== 'transfer').slice(0, 3);
   const totalIncome = s.income + s.plannedIncome;
   const engaged = s.fixedPaid + s.fixedUpcoming + s.variableSpent;
   const rav = s.resteAVivre;
 
-  const quickAdd = async (q: QuickAdd) => {
-    haptic('success');
-    const tx = await addTransaction({
-      type: 'expense',
-      amount: q.amount,
-      date: today,
-      categoryId: q.categoryId,
-      accountId: q.accountId ?? settings.defaultAccountId ?? data.accounts[0]?.id,
-      toAccountId: null,
-      note: q.label,
-      recurringId: null,
-      occurrence: null,
-    });
-    toast(`${q.label} · ${formatMoney(q.amount)} ajouté`, {
-      action: { label: 'Annuler', onClick: () => void deleteTransaction(tx.id) },
-    });
-    void checkBudgetAfterChange(data, tx);
-  };
-
-  const seeAll = (label: string, onClick: () => void) => (
+  const link = (label: string, onClick: () => void) => (
     <button className="min-h-8 text-[15px] font-medium text-accent" onClick={onClick}>
       {label}
     </button>
@@ -63,7 +36,12 @@ export function Dashboard() {
     <Screen
       title={periodLabel(period)}
       subtitle={s.daysLeft > 0 ? `${s.daysLeft} jour${s.daysLeft > 1 ? 's' : ''} restant${s.daysLeft > 1 ? 's' : ''}` : 'Période terminée'}
-      actions={<IconButton icon="sliders" label="Réglages" className="text-label" onClick={() => open('settings')} />}
+      actions={
+        <>
+          <IconButton icon="search" label="Rechercher" className="text-label" onClick={() => push('search')} />
+          <IconButton icon="sliders" label="Réglages" className="text-label" onClick={() => push('settings')} />
+        </>
+      }
     >
       <BackupBanner />
 
@@ -90,7 +68,14 @@ export function Dashboard() {
           )}
         </p>
         <div className="mt-5">
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-valuenow={Math.round(s.engagedPct)} aria-valuemin={0} aria-valuemax={100} aria-label="Part des revenus engagée">
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-white/15"
+            role="progressbar"
+            aria-valuenow={Math.round(s.engagedPct)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Part des revenus déjà engagée"
+          >
             <div
               className={`h-full rounded-full transition-[width] duration-700 ${s.engagedPct >= 100 ? 'bg-[#ff8a80]' : 'bg-white'}`}
               style={{ width: `${Math.min(100, s.engagedPct)}%` }}
@@ -112,7 +97,7 @@ export function Dashboard() {
 
       {/* Alerte budget, seulement si nécessaire */}
       {alerts.length > 0 && (
-        <button onClick={() => open('budgets')} className="pressable mt-3 flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left shadow-card">
+        <button onClick={() => setTab('stats')} className="pressable mt-3 flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left shadow-card">
           <span className={`h-2 w-2 shrink-0 rounded-full ${alerts.some((a) => a.level === 'over') ? 'bg-negative' : 'bg-warning'}`} aria-hidden="true" />
           <span className="min-w-0 flex-1 text-[15px]">
             {alerts.length === 1
@@ -125,35 +110,9 @@ export function Dashboard() {
 
       <div className="h-7" />
 
-      {/* Ajout rapide */}
-      {quickAdds.length > 0 && (
-        <Section title="Ajout rapide" action={seeAll('Modifier', () => open('quickadds'))}>
-          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-            {quickAdds.map((q) => (
-              <button
-                key={q.id}
-                onClick={() => void quickAdd(q)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  openNew({ type: 'expense', amount: q.amount, categoryId: q.categoryId, accountId: q.accountId, note: q.label });
-                }}
-                className="pressable flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-card px-4 shadow-card"
-                aria-label={`Ajouter ${q.label} ${formatMoney(q.amount)}`}
-              >
-                <span className="text-[15px]" aria-hidden="true">
-                  {q.emoji}
-                </span>
-                <span className="text-[15px] font-medium">{q.label}</span>
-                <span className="text-[14px] text-label-2 tabular">{formatMoney(q.amount, { compact: true })}</span>
-              </button>
-            ))}
-          </div>
-        </Section>
-      )}
-
       {/* À venir */}
       {upcoming.length > 0 && (
-        <Section title="À venir" action={seeAll('Tout voir', () => open('recurrings'))}>
+        <Section title="À venir" action={link('Gérer', () => push('recurrings'))}>
           <List>
             {upcoming.map((u) => {
               const cat = u.categoryId ? categoryById.get(u.categoryId) : undefined;
@@ -180,18 +139,14 @@ export function Dashboard() {
         </Section>
       )}
 
-      {/* Récent */}
-      <Section title="Récent" action={recent.length > 0 && seeAll('Tout voir', () => setTab('transactions'))}>
-        {recent.length ? (
-          <List>
-            {recent.map((t) => (
-              <TxRow key={t.id} tx={t} showDate={formatShortDate(t.date, today)} />
-            ))}
-          </List>
+      {/* Opérations du mois */}
+      <Section title="Opérations" action={transactions.length > 0 && link('Tout voir', () => push('search'))}>
+        {monthTx.length ? (
+          <TxDayList transactions={monthTx} today={today} />
         ) : (
           <Card className="px-5 py-6 text-center">
-            <p className="text-[16px] font-semibold">Aucune opération</p>
-            <p className="mt-1 text-[14px] text-label-2">Touche + pour ajouter ta première dépense.</p>
+            <p className="text-[16px] font-semibold">Aucune opération ce mois-ci</p>
+            <p className="mt-1 text-[14px] text-label-2">Touche + pour ajouter une dépense.</p>
           </Card>
         )}
       </Section>
@@ -226,7 +181,7 @@ export function Dashboard() {
           </p>
           <p>
             La <strong className="text-label">prévision de fin de mois</strong> prolonge ton rythme actuel de dépenses courantes (
-            {formatMoney(s.variableSpent)} en {s.daysElapsed} j). Les virements entre tes comptes ne sont pas comptés.
+            {formatMoney(s.variableSpent)} en {s.daysElapsed} j).
           </p>
         </div>
       </Sheet>

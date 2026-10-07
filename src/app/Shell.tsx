@@ -5,16 +5,9 @@ import { TabBar } from '../components/TabBar';
 import { Toaster, ConfirmHost } from '../components/Overlays';
 import { TransactionSheet } from '../features/transactions/TransactionSheet';
 import { Dashboard } from '../features/dashboard/Dashboard';
-import { TransactionsScreen } from '../features/transactions/TransactionsScreen';
-import { MoreScreen } from '../features/more/MoreScreen';
-import { AccountsScreen, AccountDetailScreen } from '../features/accounts/AccountsScreen';
-import { BudgetsScreen } from '../features/budgets/BudgetsScreen';
+import { SearchScreen } from '../features/transactions/SearchScreen';
 import { RecurringsScreen } from '../features/recurring/RecurringsScreen';
-import { SubscriptionsScreen } from '../features/recurring/SubscriptionsScreen';
-import { GoalsScreen, GoalDetailScreen } from '../features/goals/GoalsScreen';
-import { SharedScreen, GroupDetailScreen } from '../features/shared/SharedScreen';
 import { CategoriesScreen } from '../features/categories/CategoriesScreen';
-import { QuickAddsScreen } from '../features/quickadds/QuickAddsScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { ApplePayScreen } from '../features/applepay/ApplePayScreen';
 
@@ -24,22 +17,12 @@ const SimulatorScreen = lazy(() => import('../features/simulator/SimulatorScreen
 
 const SCREENS: Record<RouteName, ComponentType<{ params?: Record<string, string> }>> = {
   home: Dashboard,
-  transactions: TransactionsScreen,
   stats: StatsScreen,
-  more: MoreScreen,
-  accounts: AccountsScreen,
-  account: AccountDetailScreen,
-  budgets: BudgetsScreen,
-  recurrings: RecurringsScreen,
-  subscriptions: SubscriptionsScreen,
-  goals: GoalsScreen,
-  goal: GoalDetailScreen,
-  shared: SharedScreen,
-  group: GroupDetailScreen,
-  simulator: SimulatorScreen,
-  categories: CategoriesScreen,
-  quickadds: QuickAddsScreen,
+  search: SearchScreen,
   settings: SettingsScreen,
+  recurrings: RecurringsScreen,
+  categories: CategoriesScreen,
+  simulator: SimulatorScreen,
   applepay: ApplePayScreen,
 };
 
@@ -112,7 +95,7 @@ export function Shell() {
   return (
     <div className="fixed inset-0 bg-bg">
       <main className="absolute inset-0">
-        {(['home', 'transactions', 'stats', 'more'] as TabId[]).map((t) =>
+        {(['home', 'stats'] as TabId[]).map((t) =>
           visited.has(t) ? <TabStack key={t} tab={t} active={t === tab} /> : null,
         )}
       </main>

@@ -14,13 +14,15 @@ import { buildIcs } from '../../lib/ics';
 import { saveFile } from '../../lib/files';
 import { haptic } from '../../lib/haptics';
 import { exportCSV, exportJSON, pickAndImportJSON } from './backupActions';
+import { useNav } from '../../stores/nav';
 import { PinPad } from '../security/LockScreen';
 import type { ThemePref } from '../../types';
 
 const selectCls = 'min-h-11 max-w-[55%] appearance-none bg-transparent text-right text-[16px] text-label-2 outline-none';
 
 export function SettingsScreen() {
-  const { settings, accounts, today, transactions } = useData();
+  const { settings, today, transactions } = useData();
+  const push = useNav((s) => s.push);
   const [pinSheet, setPinSheet] = useState<'set' | 'disable' | null>(null);
   const [bioAvailable, setBioAvailable] = useState(false);
   const [perm, setPerm] = useState(notificationPermission());
@@ -81,6 +83,39 @@ export function SettingsScreen() {
 
   return (
     <Screen title="Réglages" back>
+      <Section title="Mon budget" footer="Début du mois : si tes revenus tombent le 5, choisis le 5 (le mois ira du 5 au 4).">
+        <List>
+          <Row icon="repeat" title="Revenus et charges fixes" subtitle="Salaire, APL, loyer, abonnements…" chevron onClick={() => push('recurrings')} />
+          <Row icon="tag" title="Catégories" chevron onClick={() => push('categories')} />
+          <Row
+            icon="zap"
+            title="Paiements Apple Pay"
+            subtitle={settings.lastApplePayAt ? 'Ajout automatique actif' : 'Ajoute tes achats automatiquement'}
+            chevron
+            onClick={() => push('applepay')}
+          />
+          <Row icon="calendar" title="Début du mois">
+            <select aria-label="Premier jour du mois" className={selectCls} value={settings.monthStartDay} onChange={(e) => set({ monthStartDay: Number(e.target.value) })}>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                <option key={d} value={d}>
+                  {d === 1 ? 'Le 1er' : `Le ${d}`}
+                  {d > 28 ? ' (ou dernier jour)' : ''}
+                </option>
+              ))}
+            </select>
+          </Row>
+          <Row icon="wallet" title="Devise">
+            <select aria-label="Devise" className={selectCls} value={settings.currency} onChange={(e) => set({ currency: e.target.value })}>
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </Row>
+        </List>
+      </Section>
+
       <Section title="Apparence">
         <div className="mb-3">
           <Segmented<ThemePref>
@@ -95,43 +130,8 @@ export function SettingsScreen() {
           />
         </div>
         <List>
-          <Row icon="zap" iconBg="#FFB224" title="Retour haptique" subtitle="Vibrations légères (iOS 18+)">
+          <Row icon="zap" title="Retour haptique" subtitle="Vibrations légères (iOS 18+)">
             <Toggle checked={settings.haptics} onChange={(haptics) => set({ haptics })} label="Retour haptique" />
-          </Row>
-        </List>
-      </Section>
-
-      <Section title="Budget" footer="Si tes revenus tombent le 5, commence le mois le 5 : le reste à vivre sera calculé du 5 au 4 du mois suivant.">
-        <List>
-          <Row icon="wallet" iconBg="#30A46C" title="Devise">
-            <select aria-label="Devise" className={selectCls} value={settings.currency} onChange={(e) => set({ currency: e.target.value })}>
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </Row>
-          <Row icon="calendar" iconBg="#E5484D" title="Début du mois">
-            <select aria-label="Premier jour du mois" className={selectCls} value={settings.monthStartDay} onChange={(e) => set({ monthStartDay: Number(e.target.value) })}>
-              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  {d === 1 ? 'Le 1er' : `Le ${d}`}
-                  {d > 28 ? ' (ou dernier jour)' : ''}
-                </option>
-              ))}
-            </select>
-          </Row>
-          <Row icon="card" iconBg="#5B5BD6" title="Compte par défaut">
-            <select aria-label="Compte par défaut" className={selectCls} value={settings.defaultAccountId ?? ''} onChange={(e) => set({ defaultAccountId: e.target.value })}>
-              {accounts
-                .filter((a) => !a.archived)
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-            </select>
           </Row>
         </List>
       </Section>

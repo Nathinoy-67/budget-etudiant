@@ -15,9 +15,10 @@ await ctx.addInitScript(() => Object.defineProperty(navigator, 'standalone', { g
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
+let n = 0;
 const shot = async (name) => {
   await page.waitForTimeout(500);
-  await page.screenshot({ path: join(OUT, `${scheme}-${name}.png`) });
+  await page.screenshot({ path: join(OUT, `${scheme}-${String(++n).padStart(2, '0')}-${name}.png`) });
 };
 const scroll = (y) =>
   page.evaluate((y) => {
@@ -25,30 +26,36 @@ const scroll = (y) =>
     els[els.length - 1]?.scrollTo(0, y);
   }, y);
 const tab = (label) => page.getByRole('navigation').getByRole('button', { name: label }).click();
+const back = () => page.getByRole('button', { name: 'Retour' }).last().click();
 
 await page.goto(BASE);
 await page.getByRole('button', { name: /données exemple/ }).click();
 await page.getByText('Données exemple chargées').waitFor({ timeout: 20000 });
 await page.waitForTimeout(3000); // laisse partir les toasts
-await shot('accueil-1');
+await shot('accueil');
 await scroll(700);
-await shot('accueil-2');
+await shot('accueil-operations');
 await scroll(0);
-await tab('Opérations');
-await shot('operations');
 await tab('Analyse');
 await page.waitForTimeout(1200);
-await shot('stats-1');
-await scroll(800);
-await shot('stats-2');
-await tab('Plus');
-await shot('plus');
-await page.getByRole('button', { name: /^Budgets/ }).click();
-await shot('budgets');
-await page.getByRole('button', { name: 'Retour' }).last().click();
-await page.getByRole('button', { name: /Objectifs/ }).click();
-await shot('objectifs');
-await page.getByRole('button', { name: 'Retour' }).last().click();
+await shot('analyse');
+await scroll(650);
+await shot('analyse-categories');
+await scroll(2400);
+await shot('analyse-bas');
+await page.getByRole('button', { name: /Simulateur d'économies/ }).click();
+await shot('simulateur');
+await back();
+await tab('Accueil');
+await page.getByRole('button', { name: 'Réglages' }).click();
+await shot('reglages');
+await page.getByRole('button', { name: /Revenus et charges fixes/ }).click();
+await shot('revenus-charges');
+await back();
+await back();
+await page.getByRole('button', { name: 'Rechercher' }).click();
+await shot('recherche');
+await back();
 await page.getByRole('navigation').getByRole('button', { name: 'Ajouter une opération' }).click();
 await shot('saisie');
 console.log(errors.length ? `ERREURS:\n${errors.join('\n')}` : 'ok');
