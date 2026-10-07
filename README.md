@@ -34,7 +34,7 @@ Application de gestion de budget pour étudiant, pensée pour l'iPhone : **PWA i
 |---|---|
 | **Tableau de bord** | Reste à vivre, budget par jour jusqu'à la fin du mois, jauge des revenus engagés, solde du mois, dépenses du jour, prévision de fin de mois au rythme actuel, échéances à venir, objectifs, dernières opérations. Touche la carte violette pour le détail du calcul. |
 | **Saisie express** | Bouton **+** → pavé numérique intégré → catégorie (pré-sélection de ta catégorie la plus fréquente) → **Ajouter**. Date (aujourd'hui / hier / autre), compte, note, et option « Répéter ». |
-| **Paiements Apple Pay automatiques** | Avec une automatisation de l'app Raccourcis (déclencheur « Transaction »), chaque paiement Apple Pay ouvre l'appli et enregistre la dépense (montant, commerçant, catégorie devinée). Les corrections de catégorie sont retenues par commerçant, les doublons ignorés. Guide pas à pas dans **Plus → Paiements Apple Pay**. |
+| **Paiements Apple Pay automatiques** | Une automatisation de l'app Raccourcis (déclencheur « Transaction ») envoie chaque paiement Apple Pay, en arrière-plan, à un **relais privé** (Cloudflare Worker, dossier `relay/`). Budget récupère les paiements en attente à l'ouverture et toutes les 15 s, à la date du paiement, catégorie devinée d'après le commerçant (corrections retenues), sans doublon. Guide pas à pas dans **Plus → Paiements Apple Pay**. |
 | **Ajout en 1 tap** | Raccourcis personnalisables (café, ticket de bus, courses…) sur l'accueil, avec **Annuler** pendant 5 s. |
 | **Opérations** | Regroupées par jour avec total quotidien, recherche (note, catégorie ou montant exact), filtres (période, type, catégories, compte, montant min/max). **Glisser vers la gauche** pour supprimer, avec annulation. Toucher pour modifier. |
 | **Catégories** | Personnalisables (nom, emoji, couleur, ordre). 10 catégories de dépenses et 5 de revenus par défaut. Une catégorie utilisée est archivée au lieu d'être supprimée. |
@@ -71,6 +71,15 @@ Application de gestion de budget pour étudiant, pensée pour l'iPhone : **PWA i
 - **Réglages → Exporter une sauvegarde (JSON)** : ouvre la feuille de partage, choisis « Enregistrer dans Fichiers » (iCloud Drive conseillé).
 - **Restaurer** : Réglages → Restaurer une sauvegarde → choisis le fichier `.json`.
 - **Export CSV** des opérations (séparateur `;`, virgule décimale, UTF-8 avec BOM) pour Excel ou Numbers.
+
+## Relais Apple Pay (Cloudflare)
+
+Sur iOS, un lien ouvert par Raccourcis s'ouvre dans Safari, dont les données sont séparées de l'appli installée. Les paiements passent donc par un petit relais :
+
+- `relay/worker.js` : Worker + KV. Routes `/claim` (liaison unique par clé secrète générée dans l'appli, seule son empreinte SHA-256 est stockée), `/pay` (appelée par le raccourci), `/pending` et `/ack` (appli). Paiements non récupérés effacés après 60 jours. CORS limité au site.
+- Déploiement : `cd relay && npx wrangler login && npx wrangler deploy` (le KV est déjà référencé dans `wrangler.toml`).
+- Adresse utilisée par l'appli : `RELAY_URL` dans `src/features/applepay/relay.ts` (surcharge possible avec `VITE_RELAY_URL`).
+- Test local : `npx wrangler dev` dans `relay/`, puis `VITE_RELAY_URL=http://127.0.0.1:8787 npm run dev` et `node scripts/relay-check.mjs`.
 
 ## Développement
 

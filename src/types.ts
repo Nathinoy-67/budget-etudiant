@@ -183,5 +183,7 @@ export interface Settings {
   /** Dernier paiement Apple Pay reçu (horodatage) et nombre total reçu. */
   lastApplePayAt?: number | null;
   applePayCount?: number;
+  /** Clé secrète du relais Apple Pay (Cloudflare Worker), générée par l'appli. */
+  relayKey?: string | null;
   createdAt: number;
 }

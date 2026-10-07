@@ -1,13 +1,13 @@
 import type { AppData } from '../../hooks/useData';
 import { db } from '../../db/db';
 import { addTransaction, updateSettings } from '../../db/actions';
-import { guessCategory, merchantKey, parseIncomingPayment, prettyMerchant } from '../../lib/merchant';
+import { guessCategory, merchantKey, parseIncomingPayment, prettyMerchant, type IncomingPayment } from '../../lib/merchant';
 import { formatMoney } from '../../lib/money';
 import { haptic } from '../../lib/haptics';
 import { toast, useTxSheet } from '../../stores/ui';
 import { checkBudgetAfterChange } from '../alerts';
 import { isIOSSafariTab } from '../../lib/notifications';
-import type { ID, Transaction } from '../../types';
+import type { ID, ISODate, Transaction } from '../../types';
 
 const DUPLICATE_WINDOW_MS = 3 * 60_000;
 
@@ -17,20 +17,68 @@ export function hasIncomingPayment(search = location.search): boolean {
   return p.has('applepay') || p.has('montant');
 }
 
-/** Retire les paramètres du paiement de l'URL (un rechargement ne doit pas l'ajouter deux fois). */
-function cleanUrl() {
-  history.replaceState(null, '', location.pathname);
+/**
+ * Enregistre un paiement Apple Pay comme dépense : catégorie devinée d'après le commerçant,
+ * compte par défaut. Ne notifie pas (l'appelant décide du message).
+ */
+export async function recordApplePayment(
+  data: AppData,
+  payment: IncomingPayment,
+  opts: { date?: ISODate; createdAt?: number; id?: ID } = {},
+): Promise<Transaction | null> {
+  const expenseCats = data.categories.filter((c) => c.kind === 'expense' && !c.archived);
+  const categoryId: ID | null =
+    guessCategory(payment.merchant, data.categories, data.settings.merchantRules ?? {}) ??
+    expenseCats.find((c) => c.name === 'Autre')?.id ??
+    expenseCats[0]?.id ??
+    null;
+  const accountId = data.settings.defaultAccountId ?? data.accounts.find((a) => !a.archived)?.id;
+  if (!accountId) return null;
+  return addTransaction({
+    id: opts.id,
+    createdAt: opts.createdAt,
+    type: 'expense',
+    amount: payment.amount,
+    date: opts.date ?? data.today,
+    categoryId,
+    accountId,
+    toAccountId: null,
+    note: prettyMerchant(payment.merchant),
+    recurringId: null,
+    occurrence: null,
+    source: 'applepay',
+    merchant: payment.merchant,
+  });
+}
+
+/** Message de confirmation, avec « Modifier » pour corriger la catégorie (qui sera alors apprise). */
+export function announcePayments(data: AppData, txs: Transaction[]) {
+  if (!txs.length) return;
+  haptic('success');
+  if (txs.length === 1) {
+    const tx = txs[0];
+    const cat = tx.categoryId ? data.categoryById.get(tx.categoryId) : undefined;
+    toast(`${tx.note} · ${formatMoney(tx.amount)} ajouté${cat ? ` dans ${cat.emoji} ${cat.name}` : ''}`, {
+      tone: 'success',
+      duration: 6000,
+      action: { label: 'Modifier', onClick: () => useTxSheet.getState().openEdit(tx) },
+    });
+  } else {
+    const total = txs.reduce((s, t) => s + t.amount, 0);
+    toast(`${txs.length} paiements Apple Pay ajoutés (${formatMoney(total)})`, { tone: 'success', duration: 6000 });
+  }
+  for (const tx of txs) void checkBudgetAfterChange(data, tx);
 }
 
 /**
- * Enregistre le paiement Apple Pay transmis par le raccourci iOS (Raccourcis → Automatisation → Transaction).
- * Retourne la transaction créée, ou null s'il n'y a rien à faire.
+ * Paiement transmis directement par l'URL (`?applepay=montant|commerçant`).
+ * Méthode d'origine, conservée pour les configurations où le lien s'ouvre dans l'appli.
  */
 export async function receiveApplePay(data: AppData): Promise<Transaction | null> {
   const search = location.search;
   // Ouvert dans Safari sur iPhone : <ApplePayInSafari> s'en charge (données séparées de l'appli installée)
   if (!hasIncomingPayment(search) || isIOSSafariTab()) return null;
-  cleanUrl();
+  history.replaceState(null, '', location.pathname);
   const payment = parseIncomingPayment(search);
   if (!payment) {
     toast('Paiement Apple Pay reçu mais illisible. Vérifie le raccourci (Plus → Paiements Apple Pay).', { tone: 'error', duration: 6000 });
@@ -49,38 +97,10 @@ export async function receiveApplePay(data: AppData): Promise<Transaction | null
     return null;
   }
 
-  const expenseCats = data.categories.filter((c) => c.kind === 'expense' && !c.archived);
-  const categoryId: ID | null =
-    guessCategory(payment.merchant, data.categories, data.settings.merchantRules ?? {}) ??
-    expenseCats.find((c) => c.name === 'Autre')?.id ??
-    expenseCats[0]?.id ??
-    null;
-  const accountId = data.settings.defaultAccountId ?? data.accounts.find((a) => !a.archived)?.id;
-  if (!accountId) return null;
-
-  const tx = await addTransaction({
-    type: 'expense',
-    amount: payment.amount,
-    date: data.today,
-    categoryId,
-    accountId,
-    toAccountId: null,
-    note: prettyMerchant(payment.merchant),
-    recurringId: null,
-    occurrence: null,
-    source: 'applepay',
-    merchant: payment.merchant,
-  });
+  const tx = await recordApplePayment(data, payment);
+  if (!tx) return null;
   await updateSettings({ lastApplePayAt: Date.now(), applePayCount: (data.settings.applePayCount ?? 0) + 1 });
-
-  const cat = categoryId ? data.categoryById.get(categoryId) : undefined;
-  haptic('success');
-  toast(`${tx.note} · ${formatMoney(tx.amount)} ajouté${cat ? ` dans ${cat.emoji} ${cat.name}` : ''}`, {
-    tone: 'success',
-    duration: 6000,
-    action: { label: 'Modifier', onClick: () => useTxSheet.getState().openEdit(tx) },
-  });
-  void checkBudgetAfterChange(data, tx);
+  announcePayments(data, [tx]);
   return tx;
 }
 

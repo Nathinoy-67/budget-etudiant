@@ -10,6 +10,7 @@ import { runForegroundChecks } from '../features/alerts';
 import { useTheme } from '../hooks/useTheme';
 import { Toaster, ConfirmHost } from '../components/Overlays';
 import { hasIncomingPayment, receiveApplePay } from '../features/applepay/receive';
+import { syncRelay } from '../features/applepay/relay';
 import { ApplePayInSafari } from '../features/applepay/ApplePayInSafari';
 import { isIOSSafariTab } from '../lib/notifications';
 
@@ -48,6 +49,7 @@ function Root() {
       if (s.pin && hiddenAt.current && Date.now() - hiddenAt.current >= s.lockAfterMinutes * 60_000) setLocked(true);
       hiddenAt.current = null;
       await generateDueRecurring();
+      void syncRelay(dataRef.current);
       void runForegroundChecks(dataRef.current);
     };
     document.addEventListener('visibilitychange', onVisibility);
@@ -59,6 +61,8 @@ function Root() {
     if (settings.onboarded) {
       // Paiement Apple Pay transmis par le raccourci iOS (?applepay=…)
       void receiveApplePay(dataRef.current);
+      // Paiements Apple Pay en attente sur le relais Cloudflare
+      void syncRelay(dataRef.current);
       void runForegroundChecks(dataRef.current);
     }
     // Raccourci de l'icône (manifest) : ?action=add
@@ -69,6 +73,15 @@ function Root() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.onboarded]);
+
+  // Relais Apple Pay : vérifie régulièrement tant que l'appli est ouverte
+  useEffect(() => {
+    if (!settings.onboarded || !settings.relayKey) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') void syncRelay(dataRef.current);
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [settings.onboarded, settings.relayKey]);
 
   // Lien de paiement ouvert dans Safari au lieu de l'appli installée : données séparées sur iOS
   if (hasIncomingPayment() && isIOSSafariTab()) return <ApplePayInSafari />;

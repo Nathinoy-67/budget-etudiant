@@ -54,9 +54,9 @@ export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Prom
 
 export type NewTransaction = Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>;
 
-export async function addTransaction(t: NewTransaction): Promise<Transaction> {
+export async function addTransaction(t: NewTransaction & { id?: ID; createdAt?: number }): Promise<Transaction> {
   const now = Date.now();
-  const full: Transaction = { ...t, id: uid(), createdAt: now, updatedAt: now };
+  const full: Transaction = { ...t, id: t.id ?? uid(), createdAt: t.createdAt ?? now, updatedAt: now };
   await db.transactions.add(full);
   return full;
 }
