@@ -2,7 +2,7 @@
 
 Application de gestion de budget pour étudiant, pensée pour l'iPhone : **PWA installable**, 100 % hors ligne, **aucun compte, aucun serveur**. Toutes les données restent sur le téléphone (IndexedDB).
 
-**URL :** https://nathinoy.github.io/budget-etudiant/ (après le premier déploiement, voir plus bas)
+**URL :** https://nathinoy-67.github.io/budget-etudiant/ (après le premier déploiement, voir plus bas)
 
 ---
 
@@ -134,12 +134,12 @@ Première mise en place :
 1. Créer le dépôt **public** `budget-etudiant` sur GitHub (sans README).
 2. Pousser le code :
    ```bash
-   git remote add origin https://github.com/Nathinoy/budget-etudiant.git
+   git remote add origin https://github.com/Nathinoy-67/budget-etudiant.git
    git push -u origin main
    ```
 3. Sur GitHub : **Settings → Pages → Build and deployment → Source : GitHub Actions**.
 4. Onglet **Actions** : relancer le workflow si le premier run a échoué faute de Pages activé.
-5. L'appli est en ligne sur **https://nathinoy.github.io/budget-etudiant/**.
+5. L'appli est en ligne sur **https://nathinoy-67.github.io/budget-etudiant/**.
 
 **Alternative Netlify** : importer le dépôt sur Netlify, `netlify.toml` configure tout (build servi à la racine).
 
