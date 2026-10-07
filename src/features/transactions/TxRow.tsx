@@ -23,6 +23,7 @@ export function TxRow({ tx, showDate }: { tx: Transaction; showDate?: string }) 
   const subtitleParts = [
     tx.type !== 'transfer' && tx.note ? cat?.name : tx.type === 'transfer' ? tx.note || 'Virement' : null,
     accounts.filter((a) => !a.archived).length > 1 && tx.type !== 'transfer' ? acc?.name : null,
+    tx.source === 'applepay' ? 'Apple Pay' : null,
     showDate,
   ].filter(Boolean);
 

@@ -8,7 +8,7 @@ import { memberBalances } from '../../lib/split';
 import { monthlyEquivalent } from '../../lib/recurrence';
 
 export function MoreScreen() {
-  const { accounts, transactions, today, categories, period, recurrings, goals, groups, sharedExpenses } = useData();
+  const { accounts, transactions, today, categories, period, recurrings, goals, groups, sharedExpenses, settings } = useData();
   const push = useNav((s) => s.push);
 
   const total = useMemo(() => {
@@ -32,6 +32,15 @@ export function MoreScreen() {
     <Screen title="Plus">
       <Section title="Mon argent">
         <List>
+          <Row
+            icon="zap"
+            iconBg="#111111"
+            title="Paiements Apple Pay"
+            subtitle={settings.lastApplePayAt ? 'Ajout automatique activé' : 'Ajoute tes achats automatiquement'}
+            value={settings.lastApplePayAt ? '✅' : undefined}
+            chevron
+            onClick={() => push('applepay')}
+          />
           <Row icon="wallet" iconBg="#5B5BD6" title="Comptes" value={<Money cents={total} />} chevron onClick={() => push('accounts')} />
           <Row
             icon="pie"

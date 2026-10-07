@@ -9,6 +9,9 @@ import { setHapticsEnabled } from '../lib/haptics';
 import { runForegroundChecks } from '../features/alerts';
 import { useTheme } from '../hooks/useTheme';
 import { Toaster, ConfirmHost } from '../components/Overlays';
+import { hasIncomingPayment, receiveApplePay } from '../features/applepay/receive';
+import { ApplePayInSafari } from '../features/applepay/ApplePayInSafari';
+import { isIOSSafariTab } from '../lib/notifications';
 
 function Splash() {
   return (
@@ -53,7 +56,11 @@ function Root() {
 
   // Vérifications au lancement (une fois)
   useEffect(() => {
-    if (settings.onboarded) void runForegroundChecks(dataRef.current);
+    if (settings.onboarded) {
+      // Paiement Apple Pay transmis par le raccourci iOS (?applepay=…)
+      void receiveApplePay(dataRef.current);
+      void runForegroundChecks(dataRef.current);
+    }
     // Raccourci de l'icône (manifest) : ?action=add
     const params = new URLSearchParams(location.search);
     if (params.get('action') === 'add') {
@@ -62,6 +69,9 @@ function Root() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.onboarded]);
+
+  // Lien de paiement ouvert dans Safari au lieu de l'appli installée : données séparées sur iOS
+  if (hasIncomingPayment() && isIOSSafariTab()) return <ApplePayInSafari />;
 
   if (!settings.onboarded)
     return (

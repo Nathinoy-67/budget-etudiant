@@ -52,6 +52,10 @@ export interface Transaction {
   /** Opération récurrente d'origine, et date d'échéance correspondante. */
   recurringId?: ID | null;
   occurrence?: ISODate | null;
+  /** Origine automatique (paiement Apple Pay reçu via le raccourci iOS). */
+  source?: 'applepay' | null;
+  /** Nom brut du commerçant transmis par l'iPhone. */
+  merchant?: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -174,5 +178,10 @@ export interface Settings {
   notifications: NotificationPrefs;
   /** Clés des notifications déjà envoyées (anti-doublon). */
   notified: string[];
+  /** Catégories apprises par commerçant (clé = merchantKey). */
+  merchantRules?: Record<ID, ID>;
+  /** Dernier paiement Apple Pay reçu (horodatage) et nombre total reçu. */
+  lastApplePayAt?: number | null;
+  applePayCount?: number;
   createdAt: number;
 }

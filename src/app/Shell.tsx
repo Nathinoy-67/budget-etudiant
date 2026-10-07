@@ -16,6 +16,7 @@ import { SharedScreen, GroupDetailScreen } from '../features/shared/SharedScreen
 import { CategoriesScreen } from '../features/categories/CategoriesScreen';
 import { QuickAddsScreen } from '../features/quickadds/QuickAddsScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
+import { ApplePayScreen } from '../features/applepay/ApplePayScreen';
 
 // Écrans lourds (Recharts) chargés à la demande
 const StatsScreen = lazy(() => import('../features/stats/StatsScreen'));
@@ -39,6 +40,7 @@ const SCREENS: Record<RouteName, ComponentType<{ params?: Record<string, string>
   categories: CategoriesScreen,
   quickadds: QuickAddsScreen,
   settings: SettingsScreen,
+  applepay: ApplePayScreen,
 };
 
 function Loading() {

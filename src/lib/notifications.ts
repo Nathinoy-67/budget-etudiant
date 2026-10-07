@@ -47,3 +47,13 @@ export async function notify(title: string, body: string, tag?: string): Promise
     return false;
   }
 }
+
+/** iPhone / iPad (y compris iPadOS qui se présente comme un Mac). */
+export function isIOSDevice(): boolean {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+/** Sur iPhone, Safari et l'appli installée ont des données séparées : un paiement reçu dans Safari ne doit pas y être enregistré. */
+export function isIOSSafariTab(): boolean {
+  return isIOSDevice() && !isStandalone();
+}

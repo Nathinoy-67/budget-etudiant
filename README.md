@@ -34,6 +34,7 @@ Application de gestion de budget pour étudiant, pensée pour l'iPhone : **PWA i
 |---|---|
 | **Tableau de bord** | Reste à vivre, budget par jour jusqu'à la fin du mois, jauge des revenus engagés, solde du mois, dépenses du jour, prévision de fin de mois au rythme actuel, échéances à venir, objectifs, dernières opérations. Touche la carte violette pour le détail du calcul. |
 | **Saisie express** | Bouton **+** → pavé numérique intégré → catégorie (pré-sélection de ta catégorie la plus fréquente) → **Ajouter**. Date (aujourd'hui / hier / autre), compte, note, et option « Répéter ». |
+| **Paiements Apple Pay automatiques** | Avec une automatisation de l'app Raccourcis (déclencheur « Transaction »), chaque paiement Apple Pay ouvre l'appli et enregistre la dépense (montant, commerçant, catégorie devinée). Les corrections de catégorie sont retenues par commerçant, les doublons ignorés. Guide pas à pas dans **Plus → Paiements Apple Pay**. |
 | **Ajout en 1 tap** | Raccourcis personnalisables (café, ticket de bus, courses…) sur l'accueil, avec **Annuler** pendant 5 s. |
 | **Opérations** | Regroupées par jour avec total quotidien, recherche (note, catégorie ou montant exact), filtres (période, type, catégories, compte, montant min/max). **Glisser vers la gauche** pour supprimer, avec annulation. Toucher pour modifier. |
 | **Catégories** | Personnalisables (nom, emoji, couleur, ordre). 10 catégories de dépenses et 5 de revenus par défaut. Une catégorie utilisée est archivée au lieu d'être supprimée. |
@@ -78,7 +79,7 @@ Prérequis : Node.js 20+ (testé avec Node 24).
 ```bash
 npm install
 npm run dev          # http://localhost:5173/budget-etudiant/
-npm test             # 116 tests unitaires (Vitest)
+npm test             # 141 tests unitaires (Vitest)
 npm run build        # vérification TypeScript + build de production dans dist/
 npm run preview      # sert dist/ sur http://localhost:4173/budget-etudiant/
 npm run icons        # régénère les icônes PNG depuis scripts/icon.svg
@@ -92,6 +93,7 @@ node scripts/smoke.mjs        # parcours complet + 30 captures d'écran (serveur
 node scripts/flows.mjs        # scénarios avec assertions : édition, glisser-supprimer, filtres,
                               # sauter une échéance, objectif, coloc, export/import, code PIN
 node scripts/pwa-check.mjs <url> chromium   # manifest, icônes, meta iOS, service worker, hors ligne
+node scripts/applepay-check.mjs             # réception des paiements Apple Pay (appli installée et Safari)
 ```
 
 Ajouter `?noanim` à l'URL désactive les animations (pratique pour les captures).
@@ -110,6 +112,7 @@ src/
 │   ├── split.ts           Soldes de groupe, remboursements minimaux
 │   ├── stats.ts           Agrégations pour les graphiques
 │   ├── simulator.ts       Scénarios « et si ? »
+│   ├── merchant.ts        Paiements Apple Pay : lecture du lien, commerçant → catégorie
 │   ├── csv.ts, backup.ts, ics.ts, files.ts      Export / import / calendrier
 │   └── security.ts, notifications.ts, haptics.ts
 ├── db/                    Dexie (IndexedDB) : schéma, actions, valeurs par défaut, démo

@@ -19,7 +19,8 @@ export type RouteName =
   | 'simulator'
   | 'categories'
   | 'quickadds'
-  | 'settings';
+  | 'settings'
+  | 'applepay';
 
 export interface Route {
   key: string;

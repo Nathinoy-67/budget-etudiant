@@ -11,6 +11,7 @@ import { centsToInput, formatMoney, parseAmount } from '../../lib/money';
 import { haptic } from '../../lib/haptics';
 import { addRecurring, addTransaction, deleteTransaction, restoreTransactions, updateTransaction } from '../../db/actions';
 import { checkBudgetAfterChange } from '../alerts';
+import { learnMerchantCategory } from '../applepay/receive';
 import type { Frequency, ID, ISODate, TxType } from '../../types';
 
 const TYPE_LABEL: Record<TxType, string> = { expense: 'Dépense', income: 'Revenu', transfer: 'Virement' };
@@ -119,6 +120,9 @@ export function TransactionSheet() {
     try {
       if (editing) {
         await updateTransaction(editing.id, payload);
+        // Correction de catégorie d'un paiement Apple Pay : on retient le choix pour ce commerçant
+        if (editing.source === 'applepay' && editing.merchant && payload.categoryId !== editing.categoryId)
+          void learnMerchantCategory(data, editing.merchant, payload.categoryId);
         haptic('success');
         toast('Opération modifiée', { tone: 'success' });
         void checkBudgetAfterChange(data, { ...editing, ...payload }, editing);
