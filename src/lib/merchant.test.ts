@@ -65,6 +65,8 @@ describe('parseIncomingPayment', () => {
     ['?applepay=-3,50 €|RATP', 350, 'RATP'],
     ['?applepay=1 234,56 €|Apple Store', 123456, 'Apple Store'],
     ['?montant=9,99&marchand=Netflix', 999, 'Netflix'],
+    ['?applepay=12.4|CARREFOUR', 1240, 'CARREFOUR'],
+    ['?applepay=7|SNCF', 700, 'SNCF'],
     ['?applepay=7,20 €|', 720, 'Paiement Apple Pay'],
     ['?applepay=7,20 €|Café | Bar', 720, 'Café | Bar'],
   ])('%s', (search, amount, merchant) => {

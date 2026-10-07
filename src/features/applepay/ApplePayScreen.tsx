@@ -5,7 +5,7 @@ import { useData } from '../../hooks/useData';
 import { toast } from '../../stores/ui';
 import { haptic } from '../../lib/haptics';
 import { isStandalone } from '../../lib/notifications';
-import { activateRelay, sendTestPayment, shortcutUrlPrefix, syncRelay, useExistingKey } from './relay';
+import { activateRelay, sendTestPayment, shortcutPostUrl, syncRelay, useExistingKey } from './relay';
 
 async function copy(text: string, label: string) {
   try {
@@ -143,64 +143,60 @@ export function ApplePayScreen() {
       </Section>
 
       {key && (
-        <Section title="Étape 2 · Créer l'automatisation (5 min, une seule fois)">
+        <Section title="Étape 2 · Créer l'automatisation (5 min, une seule fois)" footer="Libellés de l'app Raccourcis en anglais (iOS 26). En français : Automatisation, Wallet, Exécuter immédiatement, Créer un raccourci, Obtenir le contenu de l'URL.">
           <Card className="px-4">
-            <Step n={1} title="Copie l'adresse du raccourci">
-              <Button variant="tinted" icon="share" className="mt-1 min-h-11 text-[15px]" onClick={() => void copy(shortcutUrlPrefix(key), 'Adresse')}>
+            <Step n={1} title="Copie l'adresse du relais">
+              <Button variant="tinted" icon="share" className="mt-1 min-h-11 text-[15px]" onClick={() => void copy(shortcutPostUrl(key), 'Adresse')}>
                 Copier l'adresse
               </Button>
               <p className="text-[13px]">Elle contient ta clé secrète : ne la partage pas.</p>
             </Step>
-            <Step n={2} title="Ouvre l'app Raccourcis">
+            <Step n={2} title="Crée l'automatisation">
               <p>
-                Onglet <Ui>Automatisation</Ui> en bas, puis <Ui>+</Ui> en haut à droite (ou <Ui>Nouvelle automatisation</Ui>).
+                Ouvre l'app <Ui>Shortcuts</Ui> → onglet <Ui>Automation</Ui> en bas → bouton <Ui>+</Ui> en haut à droite.
+              </p>
+              <p>
+                Fais défiler la liste et touche <Ui>Wallet</Ui> (sur les anciennes versions : <Ui>Transaction</Ui>).
               </p>
             </Step>
-            <Step n={3} title="Choisis le déclencheur de paiement">
+            <Step n={3} title="Choisis ta carte">
               <p>
-                Touche <Ui>Transaction</Ui> (il peut aussi s'appeler <Ui>Cartes</Ui> ou <Ui>Wallet</Ui>). Coche{' '}
-                <strong className="text-label">ta carte Crédit Agricole</strong>, laisse les catégories et les commerçants sur « tous ».
+                Sous <Ui>When I tap</Ui>, touche <Ui>Choose</Ui> et coche <strong className="text-label">ta carte Crédit Agricole</strong>. Laisse les
+                catégories et les commerçants (<Ui>Merchant</Ui>) sur « tous » s'ils apparaissent.
               </p>
               <p>
-                Choisis <Ui>Exécuter immédiatement</Ui> (désactive <Ui>Me notifier lors de l'exécution</Ui> si l'option apparaît), puis{' '}
-                <Ui>Suivant</Ui> et <Ui>Créer un raccourci</Ui> (ou <Ui>Nouveau raccourci vide</Ui>).
-              </p>
-            </Step>
-            <Step n={4} title="Action 1 : « Texte » avec le montant et le commerçant">
-              <p>
-                <Ui>Ajouter une action</Ui> → cherche <Ui>Texte</Ui>. Dans la zone de texte :
-              </p>
-              <p>
-                • touche <Var>Entrée du raccourci</Var> au-dessus du clavier, touche-la à nouveau et choisis <Var>Montant</Var> ;
-              </p>
-              <p>
-                • tape <strong className="font-mono text-label">|</strong> (barre verticale : clavier <Ui>123</Ui> puis <Ui>#+=</Ui>) ;
-              </p>
-              <p>
-                • ajoute encore <Var>Entrée du raccourci</Var> et choisis <Var>Commerçant</Var> (ou <Var>Marchand</Var>).
-              </p>
-              <p>
-                Résultat : <Var>Montant</Var>
-                <strong className="font-mono text-label">|</strong>
-                <Var>Commerçant</Var>
+                Coche <Ui>Run Immediately</Ui> et décoche <Ui>Notify When Run</Ui> si l'option est là. Touche <Ui>Next</Ui>, puis{' '}
+                <Ui>Create New Shortcut</Ui>.
               </p>
             </Step>
-            <Step n={5} title="Action 2 : encoder le texte">
+            <Step n={4} title="Ajoute l'action « Get Contents of URL »">
               <p>
-                Cherche <Ui>encoder</Ui> et ajoute <Ui>Encoder l'URL</Ui> (réglé sur « Encoder »). Elle prend automatiquement le <Var>Texte</Var>{' '}
-                précédent.
+                Touche <Ui>Add Action</Ui> (ou la barre de recherche en bas), tape <Ui>get contents</Ui> et choisis <Ui>Get Contents of URL</Ui>.
+              </p>
+              <p>
+                Touche le mot bleu <Ui>URL</Ui> dans l'action et <strong className="text-label">colle l'adresse</strong> copiée à l'étape 1.
               </p>
             </Step>
-            <Step n={6} title="Action 3 : envoyer au relais">
+            <Step n={5} title="Règle l'envoi">
               <p>
-                Cherche et ajoute <Ui>Obtenir le contenu de l'URL</Ui>. Touche le champ <Ui>URL</Ui>, <strong className="text-label">colle l'adresse</strong>{' '}
-                copiée, puis juste après (sans espace) ajoute la variable <Var>Texte encodé en URL</Var> (le résultat de l'action 2).
+                Touche la petite flèche <Ui>›</Ui> à droite de l'action pour l'ouvrir. Mets <Ui>Method</Ui> sur <Ui>POST</Ui> et{' '}
+                <Ui>Request Body</Ui> sur <Ui>JSON</Ui>.
               </p>
-              <p>Laisse la méthode sur GET. Touche <Ui>OK</Ui> : c'est terminé !</p>
+              <p>
+                Touche <Ui>Add new field</Ui> → <Ui>Text</Ui>. Clé (<Ui>Key</Ui>) : <strong className="font-mono text-label">montant</strong>. Dans{' '}
+                <Ui>Text</Ui>, touche <Var>Shortcut Input</Var> au-dessus du clavier, puis touche cette pastille bleue et choisis <Var>Amount</Var>.
+              </p>
+              <p>
+                Ajoute un 2ᵉ champ <Ui>Text</Ui> : clé <strong className="font-mono text-label">marchand</strong>, valeur <Var>Shortcut Input</Var> →{' '}
+                <Var>Merchant</Var>.
+              </p>
+              <p>
+                Touche <Ui>Done</Ui> en haut à droite : c'est terminé !
+              </p>
             </Step>
             <Step n="+" title="Facultatif : une notification de confirmation">
               <p>
-                Ajoute <Ui>Afficher une notification</Ui> avec par exemple « Budget : <Var>Montant</Var> chez <Var>Commerçant</Var> ».
+                Ajoute l'action <Ui>Show Notification</Ui> avec par exemple « Budget : <Var>Amount</Var> chez <Var>Merchant</Var> ».
               </p>
             </Step>
           </Card>

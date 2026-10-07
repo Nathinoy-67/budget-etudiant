@@ -20,7 +20,12 @@ export interface RelayItem {
   receivedAt: number;
 }
 
-/** Adresse à coller dans le raccourci iOS (action « Obtenir le contenu de l'URL »). */
+/** Adresse à coller dans le raccourci iOS : action « Get Contents of URL », méthode POST, corps JSON {montant, marchand}. */
+export function shortcutPostUrl(key: string): string {
+  return `${RELAY_URL}/pay?key=${encodeURIComponent(key)}`;
+}
+
+/** Variante GET (texte « montant|commerçant » encodé à la suite), utilisée par le test intégré. */
 export function shortcutUrlPrefix(key: string): string {
   return `${RELAY_URL}/pay?key=${encodeURIComponent(key)}&applepay=`;
 }
