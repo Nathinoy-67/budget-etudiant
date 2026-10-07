@@ -60,14 +60,13 @@ export function TxRow({ tx, showDate }: { tx: Transaction; showDate?: string }) 
         aria-label={`${title}, ${tx.type === 'expense' ? 'dépense' : tx.type === 'income' ? 'revenu' : 'virement'}. Toucher pour modifier.`}
       >
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px]"
-          style={{ background: tx.type === 'transfer' ? 'var(--accent-soft)' : `${cat?.color ?? '#8D8D8D'}26` }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-fill text-[19px]"
           aria-hidden="true"
         >
-          {tx.type === 'transfer' ? <Icon name="swap" size={18} className="text-accent" /> : (cat?.emoji ?? '💸')}
+          {tx.type === 'transfer' ? <Icon name="swap" size={18} className="text-label-2" /> : (cat?.emoji ?? '💸')}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-1 truncate text-[16px] font-medium">
+          <span className="flex items-center gap-1 truncate text-[15px] font-medium">
             <span className="truncate">{title}</span>
             {tx.recurringId && <Icon name="repeat" size={13} className="shrink-0 text-label-3" />}
           </span>
@@ -76,7 +75,7 @@ export function TxRow({ tx, showDate }: { tx: Transaction; showDate?: string }) 
         <Money
           cents={tx.type === 'expense' ? -tx.amount : tx.amount}
           sign={tx.type === 'income'}
-          className={`text-[16px] font-semibold ${tx.type === 'income' ? 'text-positive' : tx.type === 'transfer' ? 'text-label-2' : ''}`}
+          className={`text-[15px] font-semibold ${tx.type === 'income' ? 'text-positive' : tx.type === 'transfer' ? 'text-label-2' : ''}`}
         />
       </motion.button>
     </div>

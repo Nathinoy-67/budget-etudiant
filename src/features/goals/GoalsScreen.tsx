@@ -3,7 +3,7 @@ import { Screen } from '../../components/Screen';
 import { Badge, Button, Card, EmptyState, Field, IconButton, List, Money, ProgressBar, Ring, Section, Segmented, TextInput } from '../../components/ui';
 import { Sheet } from '../../components/Sheet';
 import { AmountSheet } from '../../components/AmountSheet';
-import { ColorPicker, EmojiPicker } from '../../components/pickers';
+import { EmojiPicker } from '../../components/pickers';
 import { confirmAction } from '../../components/Overlays';
 import { useData } from '../../hooks/useData';
 import { useNav } from '../../stores/nav';
@@ -80,13 +80,13 @@ export function GoalsScreen() {
             const p = goalProgress(g, contributions, today);
             return (
               <Card key={g.id} onClick={() => push('goal', { id: g.id })} className="flex items-center gap-4 p-4">
-                <Ring pct={p.pct} size={64} stroke={7} color={g.color} label={`${Math.round(p.pct)} %`}>
-                  <span className="text-[24px]">{g.emoji}</span>
+                <Ring pct={p.pct} size={64} stroke={7} color="var(--accent)" label={`${Math.round(p.pct)} %`}>
+                  <span className="text-[22px]">{g.emoji}</span>
                 </Ring>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-[17px] font-semibold">{g.name}</p>
-                    {p.reached && <Badge tone="positive">Atteint 🎉</Badge>}
+                    {p.reached && <Badge tone="positive">Atteint</Badge>}
                     {p.overdue && <Badge tone="negative">En retard</Badge>}
                   </div>
                   <p className="text-[14px] text-label-2 tabular">
@@ -144,13 +144,13 @@ export function GoalDetailScreen({ params }: { params?: Record<string, string> }
   return (
     <Screen title={goal.name} back actions={<IconButton icon="edit" label="Modifier l'objectif" onClick={() => setEditing(true)} />}>
       <Card className="mb-4 flex flex-col items-center p-5 text-center">
-        <Ring pct={p.pct} size={150} stroke={14} color={goal.color} label={`${Math.round(p.pct)} % atteint`}>
+        <Ring pct={p.pct} size={150} stroke={14} color="var(--accent)" label={`${Math.round(p.pct)} % atteint`}>
           <span className="text-[34px]">{goal.emoji}</span>
           <span className="text-[20px] font-bold tabular">{Math.round(p.pct)} %</span>
         </Ring>
         <p className="mt-3 text-[28px] font-bold tracking-tight tabular">{formatMoney(p.saved)}</p>
         <p className="text-[15px] text-label-2">sur {formatMoney(goal.target)}</p>
-        {p.reached && <p className="mt-2 text-[17px] font-semibold text-positive">Objectif atteint, bravo ! 🎉</p>}
+        {p.reached && <p className="mt-2 text-[17px] font-semibold text-positive">Objectif atteint, bravo !</p>}
       </Card>
 
       {!p.reached && (
@@ -189,7 +189,7 @@ export function GoalDetailScreen({ params }: { params?: Record<string, string> }
             {goal.targetDate && p.recentMonthlyAverage > 0 && p.eta && !p.overdue && (
               <p className="mt-1 text-[14px] text-label-2">
                 À ton rythme actuel ({formatMoney(p.recentMonthlyAverage)}/mois) : {formatMonthYear(p.eta)}{' '}
-                {p.eta <= goal.targetDate ? '✅' : '⏳ un peu tard'}
+                {p.eta <= goal.targetDate ? '(dans les temps)' : '(un peu tard)'}
               </p>
             )}
           </Card>
@@ -245,7 +245,7 @@ export function GoalDetailScreen({ params }: { params?: Record<string, string> }
         onSave={async (cents) => {
           await addContribution({ goalId: goal.id, amount: adding === 'out' ? -Math.min(cents, p.saved) : cents, date: today, note: '' });
           const after = p.saved + (adding === 'out' ? -cents : cents);
-          if (adding === 'in' && after >= goal.target && !p.reached) toast(`🎉 Objectif « ${goal.name} » atteint !`, { tone: 'success', duration: 4000 });
+          if (adding === 'in' && after >= goal.target && !p.reached) toast(`Objectif « ${goal.name} » atteint !`, { tone: 'success', duration: 4000 });
           else toast(adding === 'out' ? 'Retrait enregistré' : 'Versement enregistré', { tone: 'success' });
         }}
       >
@@ -321,10 +321,6 @@ function GoalSheet({ goal, onClose }: { goal: Partial<Goal> | null; onClose: () 
       {hasDate === 'date' && (
         <Field label="Date cible">{(id) => <TextInput id={id} type="date" value={targetDate} min={today} onChange={(e) => e.target.value && setTargetDate(e.target.value)} />}</Field>
       )}
-      <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Couleur</p>
-      <div className="mb-4">
-        <ColorPicker value={color} onChange={setColor} />
-      </div>
       <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Icône</p>
       <EmojiPicker value={emoji} onChange={setEmoji} />
       {isEdit && goal?.id && (

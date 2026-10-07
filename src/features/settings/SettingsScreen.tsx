@@ -17,7 +17,7 @@ import { exportCSV, exportJSON, pickAndImportJSON } from './backupActions';
 import { PinPad } from '../security/LockScreen';
 import type { ThemePref } from '../../types';
 
-const selectCls = 'min-h-11 max-w-[55%] bg-transparent text-right text-[17px] text-label-2 outline-none';
+const selectCls = 'min-h-11 max-w-[55%] appearance-none bg-transparent text-right text-[16px] text-label-2 outline-none';
 
 export function SettingsScreen() {
   const { settings, accounts, today, transactions } = useData();
@@ -44,7 +44,7 @@ export function SettingsScreen() {
     setPerm(p);
     if (p === 'granted') {
       toast('Notifications activées', { tone: 'success' });
-      void notify('Budget Étudiant', 'Les notifications fonctionnent 🎉', 'test');
+      void notify('Budget Étudiant', 'Les notifications fonctionnent.', 'test');
     } else if (p === 'denied') toast('Refusé. Réactive-les dans Réglages iPhone → Notifications → Budget.', { tone: 'warning', duration: 5000 });
   };
 
@@ -89,8 +89,8 @@ export function SettingsScreen() {
             onChange={(theme) => set({ theme })}
             options={[
               { value: 'system', label: 'Auto' },
-              { value: 'light', label: '☀️ Clair' },
-              { value: 'dark', label: '🌙 Sombre' },
+              { value: 'light', label: 'Clair' },
+              { value: 'dark', label: 'Sombre' },
             ]}
           />
         </div>
@@ -205,7 +205,7 @@ export function SettingsScreen() {
           <>
             Dernière sauvegarde : {settings.lastBackupAt ? new Date(settings.lastBackupAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'jamais'}.
             {' '}Tes données ne quittent jamais ton téléphone. iOS peut les effacer si l'appli n'est pas utilisée pendant plusieurs semaines : enregistre une copie dans Fichiers / iCloud Drive.
-            {persisted === true && ' Stockage persistant accordé ✅.'}
+            {persisted === true && ' Stockage persistant accordé.'}
             {usage && ` Espace utilisé : ${usage}.`}
           </>
         }

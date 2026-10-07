@@ -126,7 +126,7 @@ export function Onboarding() {
       });
       await updateSettings({ onboarded: true, monthStartDay: startDay });
       haptic('success');
-      toast('C’est parti ! 🎉', { tone: 'success' });
+      toast('C’est parti !', { tone: 'success' });
     } catch (e) {
       console.error(e);
       toast('Oups, une erreur est survenue', { tone: 'error' });

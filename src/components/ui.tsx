@@ -83,15 +83,15 @@ export function Section({
   className?: string;
 }) {
   return (
-    <section className={`mb-6 ${className}`}>
+    <section className={`mb-7 ${className}`}>
       {(title || action) && (
-        <div className="mb-1.5 flex items-end justify-between px-4">
-          {title && <h3 className="text-[13px] font-medium tracking-wide text-label-2 uppercase">{title}</h3>}
+        <div className="mb-2 flex min-h-7 items-center justify-between px-1">
+          {title && <h3 className="text-[17px] font-semibold tracking-[-0.01em] text-label">{title}</h3>}
           {action}
         </div>
       )}
       {children}
-      {footer && <p className="mt-1.5 px-4 text-[13px] text-label-2">{footer}</p>}
+      {footer && <p className="mt-2 px-1 text-[13px] leading-snug text-label-2">{footer}</p>}
     </section>
   );
 }
@@ -99,16 +99,16 @@ export function Section({
 export function Card({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
   if (onClick)
     return (
-      <button onClick={onClick} className={`pressable block w-full rounded-2xl bg-card text-left ${className}`}>
+      <button onClick={onClick} className={`pressable block w-full rounded-2xl bg-card text-left shadow-card ${className}`}>
         {children}
       </button>
     );
-  return <div className={`rounded-2xl bg-card ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-card shadow-card ${className}`}>{children}</div>;
 }
 
 export function List({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`overflow-hidden rounded-2xl bg-card [&>*:not(:last-child)]:after:absolute [&>*:not(:last-child)]:after:right-0 [&>*:not(:last-child)]:after:bottom-0 [&>*:not(:last-child)]:after:left-14 [&>*:not(:last-child)]:after:h-px [&>*:not(:last-child)]:after:bg-separator ${className}`}>
+    <div className={`overflow-hidden rounded-2xl bg-card shadow-card [&>*:not(:last-child)]:after:absolute [&>*:not(:last-child)]:after:right-0 [&>*:not(:last-child)]:after:bottom-0 [&>*:not(:last-child)]:after:left-14 [&>*:not(:last-child)]:after:h-px [&>*:not(:last-child)]:after:bg-separator ${className}`}>
       {children}
     </div>
   );
@@ -143,18 +143,18 @@ export function Row({
     <>
       {(icon || emoji) && (
         <span
-          className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg text-white"
-          style={{ background: iconBg ?? (emoji ? 'var(--fill)' : 'var(--accent)') }}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-fill ${destructive ? 'text-negative' : 'text-label-2'}`}
+          data-tint={iconBg}
           aria-hidden="true"
         >
-          {emoji ? <span className="text-[17px] leading-none">{emoji}</span> : icon && <Icon name={icon} size={18} />}
+          {emoji ? <span className="text-[16px] leading-none">{emoji}</span> : icon && <Icon name={icon} size={18} strokeWidth={1.9} />}
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-[17px] ${destructive ? 'text-negative' : ''}`}>{title}</span>
+        <span className={`block truncate text-[16px] ${destructive ? 'text-negative' : ''}`}>{title}</span>
         {subtitle && <span className="block truncate text-[13px] text-label-2">{subtitle}</span>}
       </span>
-      {value != null && <span className="shrink-0 text-right text-[17px] text-label-2">{value}</span>}
+      {value != null && <span className="shrink-0 text-right text-[16px] text-label-2">{value}</span>}
       {children}
       {chevron && <Icon name="chevronRight" size={18} className="shrink-0 text-label-3" />}
     </>
@@ -285,7 +285,7 @@ export function Select({
 export function levelColor(pct: number): string {
   if (pct >= 100) return 'var(--negative)';
   if (pct >= 80) return 'var(--warning)';
-  return 'var(--positive)';
+  return 'var(--accent)';
 }
 
 export function ProgressBar({
@@ -398,15 +398,15 @@ export function Badge({ children, tone = 'default' }: { children: ReactNode; ton
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${tones[tone]}`}>{children}</span>;
 }
 
-/** Pastille emoji sur fond coloré (catégories, comptes, objectifs). */
-export function EmojiBadge({ emoji, color, size = 40 }: { emoji: string; color: string; size?: number }) {
+/** Pastille emoji sobre (fond neutre) pour catégories, comptes, objectifs. */
+export function EmojiBadge({ emoji, size = 40 }: { emoji: string; color?: string; size?: number }) {
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full"
-      style={{ width: size, height: size, background: `${color}26` }}
+      className="flex shrink-0 items-center justify-center rounded-[12px] bg-fill"
+      style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      <span style={{ fontSize: size * 0.5 }} className="leading-none">
+      <span style={{ fontSize: size * 0.48 }} className="leading-none">
         {emoji}
       </span>
     </span>

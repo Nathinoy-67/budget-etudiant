@@ -54,7 +54,7 @@ export function ApplePayScreen() {
     setBusy(false);
     if (res === 'ok') {
       haptic('success');
-      toast('Relais activé ✅', { tone: 'success' });
+      toast('Relais activé', { tone: 'success' });
     } else if (res === 'already-linked') {
       setAlreadyLinked(true);
       toast('Ce relais est déjà lié à une clé', { tone: 'warning' });
@@ -84,7 +84,7 @@ export function ApplePayScreen() {
     setBusy(false);
     if (ok) {
       setAlreadyLinked(false);
-      toast('Clé acceptée, relais relié ✅', { tone: 'success' });
+      toast('Clé acceptée, relais relié', { tone: 'success' });
     } else toast('Clé refusée par le relais', { tone: 'error' });
   };
 
@@ -93,7 +93,7 @@ export function ApplePayScreen() {
       <Card className="mb-5 p-4">
         <div className="flex items-center justify-between">
           <p className="text-[15px] font-semibold">État</p>
-          {last ? <Badge tone="positive">Actif ✅</Badge> : key ? <Badge tone="accent">Relais activé</Badge> : <Badge>À configurer</Badge>}
+          {last ? <Badge tone="positive">Actif</Badge> : key ? <Badge tone="accent">Relais activé</Badge> : <Badge>À configurer</Badge>}
         </div>
         <p className="mt-1 text-[14px] text-label-2">
           {last
@@ -102,7 +102,7 @@ export function ApplePayScreen() {
         </p>
         {!isStandalone() && (
           <p className="mt-2 rounded-xl bg-warning-soft px-3 py-2 text-[13px]">
-            ⚠️ Tu es dans Safari. Fais ces réglages depuis l'appli <strong>Budget</strong> de ton écran d'accueil.
+            Tu es dans Safari. Fais ces réglages depuis l'appli <strong>Budget</strong> de ton écran d'accueil.
           </p>
         )}
       </Card>
@@ -204,13 +204,13 @@ export function ApplePayScreen() {
       )}
 
       <Section title="Comment ça marche ensuite">
-        <Card className="space-y-2 p-4 text-[15px] text-label-2">
-          <p>📲 Tu paies avec Apple Pay → le raccourci envoie discrètement le montant et le commerçant à ton relais (rien ne s'ouvre).</p>
-          <p>📥 Dès que tu ouvres Budget (ou dans les 15 s s'il est déjà ouvert), la dépense est ajoutée à la date du paiement.</p>
-          <p>🏷️ La catégorie est devinée d'après le commerçant. Si elle est fausse, touche <strong className="text-label">Modifier</strong> : l'appli retiendra ton choix.</p>
-          <p>🔒 Le relais t'appartient (ton compte Cloudflare). Les paiements y sont effacés dès qu'ils sont récupérés.</p>
+        <Card className="space-y-2.5 p-4 text-[14px] leading-snug text-label-2">
+          <p>Tu paies avec Apple Pay → le raccourci envoie discrètement le montant et le commerçant à ton relais (rien ne s'ouvre).</p>
+          <p>Dès que tu ouvres Budget (ou dans les 15 s s'il est déjà ouvert), la dépense est ajoutée à la date du paiement.</p>
+          <p>La catégorie est devinée d'après le commerçant. Si elle est fausse, touche <strong className="text-label">Modifier</strong> : l'appli retiendra ton choix.</p>
+          <p>Le relais t'appartient (ton compte Cloudflare). Les paiements y sont effacés dès qu'ils sont récupérés.</p>
           <p>
-            ⚠️ Seuls les paiements <strong className="text-label">Apple Pay</strong> sont captés (pas la carte physique ni les virements). Apple peut,
+            Seuls les paiements <strong className="text-label">Apple Pay</strong> sont captés (pas la carte physique ni les virements). Apple peut,
             rarement, ne pas déclencher le raccourci.
           </p>
         </Card>

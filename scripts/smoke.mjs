@@ -94,7 +94,7 @@ await tab('Accueil');
 await shot('demo-dashboard');
 await scroll(900);
 await shot('demo-dashboard-bas');
-await tab('Stats');
+await tab('Analyse');
 await page.waitForTimeout(1500);
 await shot('demo-stats');
 await scroll(900);

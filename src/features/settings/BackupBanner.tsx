@@ -38,26 +38,20 @@ export function BackupBanner() {
   };
 
   return (
-    <div className="mb-4 rounded-2xl bg-warning-soft p-4" role="alert">
-      <div className="flex gap-3">
-        <Icon name="database" size={22} className="mt-0.5 shrink-0 text-warning" />
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold">
-            {settings.lastBackupAt ? `Dernière sauvegarde il y a ${days} jours` : 'Pense à sauvegarder tes données'}
-          </p>
-          <p className="mt-0.5 text-[14px] text-label-2">
-            iOS peut effacer les données des applis web. Garde une copie dans Fichiers ou iCloud Drive.
-          </p>
-          <div className="mt-2 flex gap-2">
-            <button onClick={() => void exportJSON()} className="pressable min-h-11 rounded-xl bg-warning px-4 text-[15px] font-semibold text-white dark:text-black">
-              Sauvegarder
-            </button>
-            <button onClick={snooze} className="min-h-11 px-3 text-[15px] font-medium text-label-2">
-              Plus tard
-            </button>
-          </div>
-        </div>
+    <div className="mb-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card" role="status">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-fill text-label-2" aria-hidden="true">
+        <Icon name="database" size={17} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-medium">{settings.lastBackupAt ? `Dernière sauvegarde il y a ${days} jours` : 'Sauvegarde tes données'}</p>
+        <p className="text-[12px] text-label-2">Une copie dans Fichiers évite toute perte.</p>
       </div>
+      <button onClick={snooze} className="min-h-10 px-1 text-[14px] text-label-2" aria-label="Me le rappeler plus tard">
+        Plus tard
+      </button>
+      <button onClick={() => void exportJSON()} className="min-h-10 px-1 text-[14px] font-semibold text-accent">
+        Sauvegarder
+      </button>
     </div>
   );
 }

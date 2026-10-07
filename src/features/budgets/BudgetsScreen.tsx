@@ -49,11 +49,11 @@ export function BudgetsScreen() {
           <div className="absolute -top-1 h-[18px] w-0.5 rounded bg-label" style={{ left: `${Math.min(100, elapsedPct)}%` }} aria-hidden="true" />
         </div>
         <p className="mt-2 text-[13px] text-label-2">
-          Le trait indique le jour du mois ({Math.round(elapsedPct)} % écoulé). Si ta barre le dépasse, tu dépenses plus vite que prévu.
+          Repère : {Math.round(elapsedPct)} % du mois écoulé.
         </p>
         {income > 0 && totalBudget > income && (
           <p className="mt-2 text-[13px] font-medium text-warning">
-            ⚠️ Tes budgets ({formatMoney(totalBudget, { compact: true })}) dépassent tes revenus du mois ({formatMoney(income, { compact: true })}).
+            Tes budgets ({formatMoney(totalBudget, { compact: true })}) dépassent tes revenus du mois ({formatMoney(income, { compact: true })}).
           </p>
         )}
       </Card>

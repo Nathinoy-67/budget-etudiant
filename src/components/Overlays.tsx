@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { useToasts } from '../stores/ui';
 import { haptic } from '../lib/haptics';
+import { Icon } from './Icon';
 
 // ---------- Toasts ----------
 
@@ -23,18 +24,21 @@ export function Toaster() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ type: 'spring', damping: 26, stiffness: 400 }}
-            className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl bg-[#1c1c1e]/95 px-4 py-3 text-white shadow-xl backdrop-blur dark:bg-[#3a3a3c]/95"
+            className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl bg-[#18181b]/95 px-4 py-2.5 text-white shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur dark:bg-[#2c2c30]/95"
             role="status"
           >
-            <span className="flex-1 text-[15px]">
-              {t.tone === 'warning' && '⚠️ '}
-              {t.tone === 'error' && '⛔ '}
-              {t.tone === 'success' && '✅ '}
-              {t.message}
-            </span>
+            {t.tone && t.tone !== 'default' && (
+              <Icon
+                name={t.tone === 'success' ? 'check' : 'alert'}
+                size={18}
+                strokeWidth={2.4}
+                className={`shrink-0 ${t.tone === 'success' ? 'text-[#4ade80]' : t.tone === 'warning' ? 'text-[#fbbf24]' : 'text-[#f87171]'}`}
+              />
+            )}
+            <span className="flex-1 text-[14px] leading-snug">{t.message}</span>
             {t.action && (
               <button
-                className="min-h-11 shrink-0 px-2 text-[15px] font-semibold text-[#a5a1ff]"
+                className="min-h-10 shrink-0 px-1 text-[14px] font-semibold text-[#b4b2ff]"
                 onClick={() => {
                   t.action!.onClick();
                   dismiss(t.id);

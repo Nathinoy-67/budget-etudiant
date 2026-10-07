@@ -37,7 +37,7 @@ export function MoreScreen() {
             iconBg="#111111"
             title="Paiements Apple Pay"
             subtitle={settings.lastApplePayAt ? 'Ajout automatique activé' : 'Ajoute tes achats automatiquement'}
-            value={settings.lastApplePayAt ? '✅' : undefined}
+            value={settings.lastApplePayAt ? 'Actif' : undefined}
             chevron
             onClick={() => push('applepay')}
           />
@@ -46,7 +46,7 @@ export function MoreScreen() {
             icon="pie"
             iconBg="#30A46C"
             title="Budgets"
-            value={overBudgets ? `${overBudgets} ⚠️` : undefined}
+            value={overBudgets ? <span className="inline-flex items-center gap-1.5 text-[14px]"><span className="h-2 w-2 rounded-full bg-warning" />{overBudgets} à surveiller</span> : undefined}
             chevron
             onClick={() => push('budgets')}
           />

@@ -124,7 +124,7 @@ export function GroupDetailScreen({ params }: { params?: Record<string, string> 
 
       <Section title="Pour tout équilibrer" footer={settlements.length ? `${settlements.length} remboursement(s) suffisent.` : undefined}>
         {settlements.length === 0 ? (
-          <Card className="p-4 text-center text-[15px] text-label-2">Tout le monde est à jour ✅</Card>
+          <Card className="p-4 text-center text-[15px] text-label-2">Tout le monde est à jour</Card>
         ) : (
           <List>
             {settlements.map((s) => (

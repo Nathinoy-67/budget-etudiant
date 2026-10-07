@@ -18,8 +18,8 @@ export function RecurringRow({ r, onClick }: { r: Recurring; onClick: () => void
   return (
     <button onClick={onClick} className="relative flex min-h-[60px] w-full items-center gap-3 px-4 py-2 text-left active:bg-fill">
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px]"
-        style={{ background: `${cat?.color ?? '#5B5BD6'}26`, opacity: r.active ? 1 : 0.5 }}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-fill text-[19px]"
+        style={{ opacity: r.active ? 1 : 0.5 }}
         aria-hidden="true"
       >
         {r.emoji ?? cat?.emoji ?? '🔁'}
@@ -75,7 +75,7 @@ export function RecurringsScreen() {
       <Card className="mb-5 grid grid-cols-3 divide-x divide-separator p-3 text-center">
         <div>
           <p className="text-[12px] text-label-2">Revenus fixes</p>
-          <Money cents={totals.income} compact className="text-[17px] font-semibold text-positive" />
+          <Money cents={totals.income} compact className="text-[17px] font-semibold" />
         </div>
         <div>
           <p className="text-[12px] text-label-2">Charges fixes</p>
@@ -83,7 +83,7 @@ export function RecurringsScreen() {
         </div>
         <div>
           <p className="text-[12px] text-label-2">Différence</p>
-          <Money cents={totals.income - totals.expense} compact colored className="text-[17px] font-semibold" />
+          <Money cents={totals.income - totals.expense} compact className={`text-[17px] font-semibold ${totals.income - totals.expense < 0 ? "text-negative" : ""}`} />
         </div>
       </Card>
       <p className="-mt-3 mb-5 px-1 text-[12px] text-label-2">Montants ramenés au mois (hebdo × 52 / 12, annuel / 12).</p>

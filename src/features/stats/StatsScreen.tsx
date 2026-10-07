@@ -147,7 +147,7 @@ export default function StatsScreen() {
   const historyData = history.map((h) => ({ label: formatMonthShort(h.period.start), Revenus: h.income, Dépenses: h.expense }));
 
   return (
-    <Screen title="Statistiques">
+    <Screen title="Analyse">
       {/* Navigation de période */}
       <div className="mb-4 flex items-center justify-between rounded-2xl bg-card px-1">
         <IconButton icon="chevronLeft" label="Mois précédent" onClick={() => setOffset(offset - 1)} />
@@ -155,28 +155,25 @@ export default function StatsScreen() {
         <IconButton icon="chevronRight" label="Mois suivant" onClick={() => setOffset(offset + 1)} disabled={offset >= 0} className="disabled:opacity-30" />
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3">
-        <Card className="p-3.5">
-          <p className="text-[13px] text-label-2">Dépenses</p>
-          <Money cents={totals.expense} className="text-[20px] font-bold" />
-          <Delta current={totals.expense} previous={prevTotals.expense} invert label={vsLabel} />
-        </Card>
-        <Card className="p-3.5">
-          <p className="text-[13px] text-label-2">Revenus</p>
-          <Money cents={totals.income} className="text-[20px] font-bold" />
-          <Delta current={totals.income} previous={prevTotals.income} label={vsLabel} />
-        </Card>
-        <Card className="p-3.5">
-          <p className="text-[13px] text-label-2">Moyenne / jour</p>
-          <Money cents={avgDay} className="text-[20px] font-bold" />
-          <p className="text-[12px] text-label-2">sur {daysElapsed} jour(s)</p>
-        </Card>
-        <Card className="p-3.5">
-          <p className="text-[13px] text-label-2">Épargne du mois</p>
-          <Money cents={totals.net} colored sign className="text-[20px] font-bold" />
-          <p className="text-[12px] text-label-2">{totals.income > 0 ? `${Math.round((totals.net / totals.income) * 100)} % des revenus` : '—'}</p>
-        </Card>
-      </div>
+      <Card className="mb-7 p-5">
+        <p className="text-[13px] text-label-2">Dépensé</p>
+        <p className="mt-0.5 text-[32px] leading-tight font-semibold tracking-[-0.03em] tabular">{formatMoney(totals.expense)}</p>
+        <Delta current={totals.expense} previous={prevTotals.expense} invert label={vsLabel} />
+        <div className="mt-4 grid grid-cols-3 divide-x divide-separator border-t border-separator pt-3.5 text-center">
+          <div className="px-2">
+            <p className="text-[12px] text-label-2">Revenus</p>
+            <Money cents={totals.income} compact className="text-[16px] font-semibold" />
+          </div>
+          <div className="px-2">
+            <p className="text-[12px] text-label-2">Par jour</p>
+            <Money cents={avgDay} compact className="text-[16px] font-semibold" />
+          </div>
+          <div className="px-2">
+            <p className="text-[12px] text-label-2">Épargné</p>
+            <Money cents={totals.net} compact className={`text-[16px] font-semibold ${totals.net < 0 ? 'text-negative' : ''}`} />
+          </div>
+        </div>
+      </Card>
 
       {/* Camembert par catégorie */}
       <ChartCard title="Dépenses par catégorie">
@@ -397,9 +394,12 @@ function Delta({ current, previous, invert, label }: { current: number; previous
   const pct = ((current - previous) / previous) * 100;
   const good = invert ? pct <= 0 : pct >= 0;
   return (
-    <p className={`flex items-center gap-0.5 text-[12px] font-medium ${good ? 'text-positive' : 'text-negative'}`}>
-      <Icon name={pct >= 0 ? 'arrowUp' : 'arrowDown'} size={12} strokeWidth={2.6} />
-      {Math.abs(Math.round(pct))} % {label}
+    <p className="mt-1 flex items-center gap-1 text-[13px] text-label-2">
+      <span className={`inline-flex items-center gap-0.5 font-medium ${good ? 'text-positive' : 'text-negative'}`}>
+        <Icon name={pct >= 0 ? 'arrowUp' : 'arrowDown'} size={12} strokeWidth={2.6} />
+        {Math.abs(Math.round(pct))} %
+      </span>
+      {label}
     </p>
   );
 }

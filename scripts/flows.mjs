@@ -57,7 +57,7 @@ await page.getByRole('button', { name: 'Effacer' }).click();
 await keypad(['9', 'Virgule', '9']);
 await page.getByRole('button', { name: 'Enregistrer' }).click();
 await page.getByText('Opération modifiée').waitFor();
-assert.ok(await page.getByText('−9,90 €').first().isVisible(), 'montant modifié');
+assert.ok(await page.getByText('−9,90 €').locator('visible=true').first().isVisible(), 'montant modifié');
 step('recherche et modification');
 
 // --- Suppression par glissement + annulation ---

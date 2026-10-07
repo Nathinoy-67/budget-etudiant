@@ -2,59 +2,71 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Couleurs façon iOS, avec variantes plus contrastées en clair pour l'accessibilité (WCAG AA) */
+/*
+ * Palette sobre : base neutre, un seul accent (indigo profond) réservé à ce qui est interactif,
+ * couleurs sémantiques (rouge / orange / vert) seulement quand elles ont un sens.
+ * Contrastes vérifiés WCAG AA pour le texte.
+ */
 :root {
-  --bg: #f2f2f7;
+  --bg: #f4f4f6;
   --bg-elevated: #ffffff;
   --card: #ffffff;
-  --card-2: #f2f2f7;
-  --fill: rgba(118, 118, 128, 0.12);
-  --fill-2: rgba(118, 118, 128, 0.2);
-  --separator: rgba(60, 60, 67, 0.18);
-  --label: #000000;
-  --label-2: rgba(60, 60, 67, 0.78);
-  --label-3: rgba(60, 60, 67, 0.55);
-  --accent: #4f46e5;
-  --accent-soft: rgba(79, 70, 229, 0.12);
-  --positive: #1a7f37;
-  --negative: #d1242f;
-  --warning: #b35900;
-  --positive-soft: rgba(26, 127, 55, 0.12);
-  --negative-soft: rgba(209, 36, 47, 0.12);
-  --warning-soft: rgba(179, 89, 0, 0.14);
-  --tabbar: rgba(249, 249, 251, 0.82);
-  --backdrop: rgba(0, 0, 0, 0.35);
+  --card-2: #f4f4f6;
+  --fill: rgba(16, 16, 28, 0.05);
+  --fill-2: rgba(16, 16, 28, 0.09);
+  --separator: rgba(16, 16, 28, 0.08);
+  --label: #0e0e12;
+  --label-2: #62626d;
+  --label-3: #9c9ca6;
+  --accent: #4338ca;
+  --accent-soft: rgba(67, 56, 202, 0.09);
+  --positive: #0f7b3f;
+  --negative: #c8281e;
+  --warning: #a15c00;
+  --positive-soft: rgba(15, 123, 63, 0.09);
+  --negative-soft: rgba(200, 40, 30, 0.08);
+  --warning-soft: rgba(161, 92, 0, 0.1);
+  --ink: #131316;
+  --on-ink: #ffffff;
+  --on-ink-2: rgba(255, 255, 255, 0.6);
+  --tabbar: rgba(250, 250, 251, 0.88);
+  --backdrop: rgba(0, 0, 0, 0.32);
+  --card-shadow: 0 1px 2px rgba(16, 16, 28, 0.04), 0 0 0 1px rgba(16, 16, 28, 0.03);
   /* séries de graphiques (palette validée daltonisme) */
   --series-1: #2a78d6;
   --series-2: #eb6834;
-  --chart-grid: rgba(60, 60, 67, 0.12);
+  --chart-grid: rgba(16, 16, 28, 0.07);
   color-scheme: light;
 }
 
 .dark {
   --bg: #000000;
-  --bg-elevated: #1c1c1e;
-  --card: #1c1c1e;
-  --card-2: #2c2c2e;
-  --fill: rgba(118, 118, 128, 0.24);
-  --fill-2: rgba(118, 118, 128, 0.36);
-  --separator: rgba(84, 84, 88, 0.6);
-  --label: #ffffff;
-  --label-2: rgba(235, 235, 245, 0.75);
-  --label-3: rgba(235, 235, 245, 0.5);
-  --accent: #8b85ff;
-  --accent-soft: rgba(139, 133, 255, 0.18);
-  --positive: #3dd56d;
-  --negative: #ff6b6b;
-  --warning: #ffb340;
-  --positive-soft: rgba(61, 213, 109, 0.16);
-  --negative-soft: rgba(255, 107, 107, 0.16);
-  --warning-soft: rgba(255, 179, 64, 0.16);
-  --tabbar: rgba(22, 22, 24, 0.82);
+  --bg-elevated: #1c1c1f;
+  --card: #151517;
+  --card-2: #1c1c1f;
+  --fill: rgba(255, 255, 255, 0.06);
+  --fill-2: rgba(255, 255, 255, 0.1);
+  --separator: rgba(255, 255, 255, 0.08);
+  --label: #f4f4f5;
+  --label-2: #a0a0ab;
+  --label-3: #6b6b75;
+  --accent: #a3a1fb;
+  --accent-soft: rgba(163, 161, 251, 0.14);
+  --positive: #4ade80;
+  --negative: #f87171;
+  --warning: #fbbf24;
+  --positive-soft: rgba(74, 222, 128, 0.12);
+  --negative-soft: rgba(248, 113, 113, 0.12);
+  --warning-soft: rgba(251, 191, 36, 0.12);
+  --ink: #1c1c1f;
+  --on-ink: #ffffff;
+  --on-ink-2: rgba(255, 255, 255, 0.6);
+  --tabbar: rgba(12, 12, 14, 0.86);
   --backdrop: rgba(0, 0, 0, 0.55);
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
   --series-1: #3987e5;
   --series-2: #d95926;
-  --chart-grid: rgba(235, 235, 245, 0.12);
+  --chart-grid: rgba(255, 255, 255, 0.08);
   color-scheme: dark;
 }
 
@@ -77,6 +89,9 @@
   --color-positive-soft: var(--positive-soft);
   --color-negative-soft: var(--negative-soft);
   --color-warning-soft: var(--warning-soft);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-2: var(--on-ink-2);
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -125,6 +140,9 @@
   }
 }
 
+@utility shadow-card {
+  box-shadow: var(--card-shadow);
+}
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }

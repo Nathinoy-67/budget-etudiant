@@ -157,25 +157,25 @@ export function TransactionsScreen() {
             key={p}
             onClick={() => setFilters({ ...filters, preset: p })}
             aria-pressed={filters.preset === p}
-            className={`min-h-9 shrink-0 rounded-full px-3.5 text-[14px] font-medium ${filters.preset === p ? 'bg-accent text-white' : 'bg-fill'}`}
+            className={`min-h-9 shrink-0 rounded-full px-3.5 text-[14px] font-medium ${filters.preset === p ? 'bg-label text-bg' : 'bg-fill'}`}
           >
             {PRESET_LABEL[p]}
           </button>
         ))}
       </div>
 
-      <div className="mb-4 flex gap-3 text-[14px]">
-        <div className="flex-1 rounded-xl bg-card px-3 py-2">
-          <p className="text-label-2">Dépenses</p>
-          <Money cents={-totals.exp} className="text-[17px] font-semibold" />
+      <div className="mb-6 grid grid-cols-3 divide-x divide-separator rounded-2xl bg-card py-3 text-center shadow-card">
+        <div className="px-2">
+          <p className="text-[12px] text-label-2">Dépenses</p>
+          <Money cents={totals.exp} compact className="text-[16px] font-semibold" />
         </div>
-        <div className="flex-1 rounded-xl bg-card px-3 py-2">
-          <p className="text-label-2">Revenus</p>
-          <Money cents={totals.inc} sign className="text-[17px] font-semibold text-positive" />
+        <div className="px-2">
+          <p className="text-[12px] text-label-2">Revenus</p>
+          <Money cents={totals.inc} compact className="text-[16px] font-semibold" />
         </div>
-        <div className="flex-1 rounded-xl bg-card px-3 py-2">
-          <p className="text-label-2">Nombre</p>
-          <p className="text-[17px] font-semibold tabular">{filtered.length}</p>
+        <div className="px-2">
+          <p className="text-[12px] text-label-2">Opérations</p>
+          <p className="text-[16px] font-semibold tabular">{filtered.length}</p>
         </div>
       </div>
 
@@ -188,9 +188,9 @@ export function TransactionsScreen() {
         />
       ) : (
         groups.map((g) => (
-          <section key={g.date} className="mb-4">
+          <section key={g.date} className="mb-5">
             <div className="mb-1.5 flex items-baseline justify-between px-1">
-              <h3 className="text-[15px] font-semibold">{relativeDayLabel(g.date, today)}</h3>
+              <h3 className="text-[14px] font-semibold text-label-2">{relativeDayLabel(g.date, today)}</h3>
               {g.spent > 0 && <Money cents={-g.spent} className="text-[13px] text-label-2" />}
             </div>
             <List>

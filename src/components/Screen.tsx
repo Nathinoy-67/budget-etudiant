@@ -56,8 +56,8 @@ export function Screen({
       >
         <div className="pt-safe">
           <div className="h-11" />
-          <div className="px-4 pb-2">
-            <h1 className="text-[34px] leading-tight font-bold tracking-tight">{title}</h1>
+          <div className="px-4 pb-4">
+            <h1 className="text-[32px] leading-tight font-bold tracking-[-0.025em]">{title}</h1>
             {subtitle && <div className="mt-0.5 text-[15px] text-label-2">{subtitle}</div>}
           </div>
           <div className={noPadding ? '' : 'px-4'}>{children}</div>

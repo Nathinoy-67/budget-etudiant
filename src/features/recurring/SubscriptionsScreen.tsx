@@ -84,7 +84,7 @@ export function SubscriptionsScreen() {
       </Card>
       {soon.length > 0 && (
         <p className="-mt-2 mb-4 rounded-xl bg-warning-soft px-3.5 py-2.5 text-[14px]">
-          🔔 {soon.length} renouvellement{soon.length > 1 ? 's' : ''} dans les 7 prochains jours.
+          {soon.length} renouvellement{soon.length > 1 ? 's' : ''} dans les 7 prochains jours.
         </p>
       )}
 

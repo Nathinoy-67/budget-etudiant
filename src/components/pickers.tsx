@@ -86,12 +86,11 @@ export function CategoryGrid({
               onChange(c.id);
             }}
             className={`pressable flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 transition-colors ${
-              selected ? 'ring-2' : 'bg-fill'
+              selected ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]' : 'bg-fill'
             }`}
-            style={selected ? { background: `${c.color}2e`, boxShadow: `inset 0 0 0 2px ${c.color}` } : undefined}
           >
             <span className="text-[22px] leading-none">{c.emoji}</span>
-            <span className="line-clamp-1 w-full text-center text-[11px] font-medium text-label-2">{c.name}</span>
+            <span className={`line-clamp-1 w-full text-center text-[11px] font-medium ${selected ? 'text-accent' : 'text-label-2'}`}>{c.name}</span>
           </button>
         );
       })}
@@ -127,7 +126,7 @@ export function AccountChips({
               onChange(a.id);
             }}
             className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[15px] font-medium transition-colors ${
-              value === a.id ? 'bg-accent text-white' : 'bg-fill text-label'
+              value === a.id ? 'bg-label text-bg' : 'bg-fill text-label'
             }`}
           >
             <span>{a.emoji}</span>

@@ -49,7 +49,7 @@ ok('lien invalide signalé');
 
 await page.getByRole('navigation').getByRole('button', { name: 'Plus' }).click();
 await page.getByRole('button', { name: /Paiements Apple Pay/ }).click();
-await page.getByText('Actif ✅').waitFor();
+await page.getByText('Actif', { exact: true }).first().waitFor();
 ok("écran de configuration : statut actif");
 
 // 2. Lien ouvert dans Safari (pas l'appli installée)

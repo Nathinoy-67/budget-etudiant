@@ -185,11 +185,6 @@ export function TransactionSheet() {
       onClose={close}
       full
       title={editing ? 'Modifier' : NEW_LABEL[type]}
-      right={
-        <button className="min-h-11 px-2 text-[17px] font-semibold text-accent disabled:opacity-40" onClick={save} disabled={!canSave}>
-          {editing ? 'OK' : 'Ajouter'}
-        </button>
-      }
       footer={
         <div>
           <Keypad value={amount} onChange={setAmount} compact />
@@ -246,13 +241,13 @@ export function TransactionSheet() {
             role="radio"
             aria-checked={date === d.value}
             onClick={() => setDate(d.value)}
-            className={`min-h-11 shrink-0 rounded-full px-3.5 text-[15px] font-medium ${date === d.value ? 'bg-accent text-white' : 'bg-fill'}`}
+            className={`min-h-11 shrink-0 rounded-full px-3.5 text-[15px] font-medium ${date === d.value ? 'bg-label text-bg' : 'bg-fill'}`}
           >
             {d.label}
           </button>
         ))}
         <label
-          className={`relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[15px] font-medium ${customDate ? 'bg-accent text-white' : 'bg-fill'}`}
+          className={`relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[15px] font-medium ${customDate ? 'bg-label text-bg' : 'bg-fill'}`}
         >
           <Icon name="calendar" size={17} />
           {customDate ? relativeDayLabel(date, today).replace(/^./, (c) => c.toUpperCase()) : 'Autre date'}
