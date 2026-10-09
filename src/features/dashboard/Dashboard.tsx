@@ -70,7 +70,7 @@ export function Dashboard() {
           <span>Reste à vivre</span>
           <Icon name="info" size={16} />
         </div>
-        <p className={`mt-1 text-[40px] leading-tight font-semibold tracking-[-0.03em] tabular ${rav < 0 ? 'text-[#ff8a80]' : ''}`}>
+        <p className={`mt-1 text-[40px] leading-tight font-semibold tracking-[-0.03em] tabular ${rav < 0 ? 'text-[#ff8a80]' : 'text-[#5ee08f]'}`}>
           {formatMoney(rav)}
         </p>
         <p className="mt-0.5 text-[15px] text-on-ink-2">
@@ -113,9 +113,9 @@ export function Dashboard() {
 
       {/* D'où vient le reste à vivre : revenus − abonnements et charges − dépenses */}
       <Card className="mt-3 grid grid-cols-3 divide-x divide-separator py-3.5">
-        <Metric label="Revenus" value={<Money cents={totalIncome} compact />} />
-        <Metric label="Abonnements" hint="et charges fixes" value={<Money cents={-fixedTotal} compact />} />
-        <Metric label="Dépenses" value={<Money cents={-s.variableSpent} compact />} />
+        <Metric label="Revenus" value={<Money cents={totalIncome} compact className="text-positive" />} />
+        <Metric label="Abonnements" hint="et charges fixes" value={<Money cents={-fixedTotal} compact className={fixedTotal ? 'text-negative' : ''} />} />
+        <Metric label="Dépenses" value={<Money cents={-s.variableSpent} compact className={s.variableSpent ? 'text-negative' : ''} />} />
       </Card>
 
       <div className="h-7" />
@@ -140,7 +140,7 @@ export function Dashboard() {
                   <Money
                     cents={u.type === 'income' ? u.amount : -u.amount}
                     sign={u.type === 'income'}
-                    className={`text-[15px] font-semibold ${u.type === 'income' ? 'text-positive' : ''}`}
+                    className={`text-[15px] font-semibold ${u.type === 'income' ? 'text-positive' : 'text-negative'}`}
                   />
                 </div>
               );
@@ -186,7 +186,7 @@ export function Dashboard() {
             <span className="text-[15px]">
               À garder en fin de mois <span className="text-accent">· {keepAtEnd ? 'Modifier' : 'Définir'}</span>
             </span>
-            <Money cents={-keepAtEnd} sign className="text-[15px]" />
+            <Money cents={-keepAtEnd} sign colored className="text-[15px]" />
           </button>
           <BreakRow label="Reste à vivre" cents={s.resteAVivre} bold />
         </List>
@@ -226,7 +226,7 @@ function BreakRow({ label, cents, bold }: { label: string; cents: number; bold?:
   return (
     <div className={`relative flex min-h-12 items-center justify-between gap-3 px-4 ${bold ? 'font-semibold' : ''}`}>
       <span className="text-[15px]">{label}</span>
-      <Money cents={cents} sign className={`text-[15px] ${bold && cents < 0 ? 'text-negative' : ''}`} />
+      <Money cents={cents} sign colored className="text-[15px]" />
     </div>
   );
 }

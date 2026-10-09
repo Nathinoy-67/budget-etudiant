@@ -196,7 +196,7 @@ export function TransactionSheet() {
 
       <div className="my-4 text-center" aria-live="polite">
         <span
-          className={`text-[44px] leading-none font-semibold tracking-[-0.03em] tabular ${type === 'income' ? 'text-positive' : 'text-label'} ${amount ? '' : 'opacity-25'}`}
+          className={`text-[44px] leading-none font-semibold tracking-[-0.03em] tabular ${!amount ? 'text-label opacity-25' : type === 'income' ? 'text-positive' : 'text-negative'}`}
         >
           {type === 'expense' && amount ? '−' : type === 'income' && amount ? '+' : ''}
           {amount || '0'}

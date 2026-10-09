@@ -75,7 +75,7 @@ export function TxRow({ tx, showDate }: { tx: Transaction; showDate?: string }) 
         <Money
           cents={tx.type === 'expense' ? -tx.amount : tx.amount}
           sign={tx.type === 'income'}
-          className={`text-[15px] font-semibold ${tx.type === 'income' ? 'text-positive' : tx.type === 'transfer' ? 'text-label-2' : ''}`}
+          className={`text-[15px] font-semibold ${tx.type === 'income' ? 'text-positive' : tx.type === 'transfer' ? 'text-label-2' : 'text-negative'}`}
         />
       </motion.button>
     </div>

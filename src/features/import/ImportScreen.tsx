@@ -194,7 +194,7 @@ export function ImportScreen() {
                       <Money
                         cents={c.amount}
                         sign={c.type === 'income'}
-                        className={`text-[15px] font-semibold ${on ? '' : 'opacity-50'} ${c.type === 'income' ? 'text-positive' : ''}`}
+                        className={`text-[15px] font-semibold ${on ? '' : 'opacity-50'} ${c.type === 'income' ? 'text-positive' : 'text-negative'}`}
                       />
                     </button>
                   );

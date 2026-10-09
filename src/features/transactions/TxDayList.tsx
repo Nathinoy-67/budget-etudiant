@@ -24,7 +24,7 @@ export function TxDayList({ transactions, today }: { transactions: Transaction[]
         <section key={g.date} className="mb-5">
           <div className="mb-1.5 flex items-baseline justify-between px-1">
             <h3 className="text-[13px] font-semibold text-label-2">{relativeDayLabel(g.date, today)}</h3>
-            {g.spent > 0 && <Money cents={-g.spent} className="text-[13px] text-label-2" />}
+            {g.spent > 0 && <Money cents={-g.spent} className="text-[13px] font-medium text-negative" />}
           </div>
           <List>
             {g.items.map((t) => (

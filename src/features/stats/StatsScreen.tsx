@@ -141,12 +141,12 @@ export default function StatsScreen() {
         <p className="mt-0.5 text-[32px] leading-tight font-semibold tracking-[-0.03em] tabular">{formatMoney(totals.expense)}</p>
         <Delta current={totals.expense} previous={prevTotals.expense} label={vsLabel} />
         <div className="mt-4 grid grid-cols-3 divide-x divide-separator border-t border-separator pt-3.5 text-center">
-          <SmallMetric label="Revenus" value={<Money cents={totals.income} compact />} />
-          <SmallMetric label="Abonnements" hint="et charges fixes" value={<Money cents={fixedSpent} compact />} />
+          <SmallMetric label="Revenus" value={<Money cents={totals.income} compact className="text-positive" />} />
+          <SmallMetric label="Abonnements" hint="et charges fixes" value={<Money cents={fixedSpent} compact className={fixedSpent ? 'text-negative' : ''} />} />
           <SmallMetric
             label="Solde"
             hint="revenus − dépenses"
-            value={<Money cents={totals.net} compact className={totals.net < 0 ? 'text-negative' : ''} />}
+            value={<Money cents={totals.net} compact colored />}
           />
         </div>
       </Card>
@@ -191,7 +191,7 @@ export default function StatsScreen() {
                     <span className="flex items-baseline justify-between gap-2">
                       <span className="truncate text-[15px] font-medium">{c.name}</span>
                       <span className="shrink-0 text-[15px] tabular">
-                        <span className="font-semibold">{euros(spent)}</span>
+                        <span className={`font-semibold ${budget && spent > budget ? 'text-negative' : ''}`}>{euros(spent)}</span>
                         {budget > 0 && <span className="text-label-2"> / {euros(budget)}</span>}
                       </span>
                     </span>
@@ -247,7 +247,7 @@ export default function StatsScreen() {
                     {cat?.emoji ?? '💶'}
                   </span>
                   <span className="flex-1 truncate text-[15px]">{cat?.name ?? 'Revenu'}</span>
-                  <Money cents={c.total} className="text-[15px] font-semibold" />
+                  <Money cents={c.total} className="text-[15px] font-semibold text-positive" />
                 </div>
               );
             })}
@@ -270,7 +270,7 @@ export default function StatsScreen() {
                     <span className="block truncate text-[15px] font-medium">{t.note || cat?.name}</span>
                     <span className="block text-[13px] text-label-2">{formatShortDate(t.date, today)}</span>
                   </span>
-                  <Money cents={-t.amount} className="text-[15px] font-semibold" />
+                  <Money cents={-t.amount} className="text-[15px] font-semibold text-negative" />
                 </button>
               );
             })}

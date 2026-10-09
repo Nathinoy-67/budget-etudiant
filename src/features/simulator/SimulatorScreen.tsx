@@ -45,7 +45,7 @@ export default function SimulatorScreen() {
     <Screen title="Et si… ?" back subtitle="Teste des économies et vois leur effet">
       <div className="mb-5 rounded-[22px] bg-ink p-5 text-on-ink">
         <p className="text-[14px] text-on-ink-2">Tu économiserais</p>
-        <p className="mt-1 text-[38px] leading-tight font-semibold tracking-[-0.03em] tabular">{formatMoney(result.yearly)}</p>
+        <p className={`mt-1 text-[38px] leading-tight font-semibold tracking-[-0.03em] tabular ${result.yearly > 0 ? 'text-[#5ee08f]' : ''}`}>{formatMoney(result.yearly)}</p>
         <p className="text-[15px] text-on-ink-2">
           par an, soit <span className="font-medium text-on-ink tabular">{formatMoney(result.monthly)}</span> par mois
         </p>
@@ -121,7 +121,7 @@ export default function SimulatorScreen() {
                   Tu dépenses en moyenne <strong className="text-label">{formatMoney(avg)}</strong>/mois ici.{' '}
                   {saving > 0 && (
                     <>
-                      → <strong className="text-label">{formatMoney(saving)}/mois</strong>, {formatMoney(saving * 12)}/an.
+                      → <strong className="text-positive">{formatMoney(saving)}/mois</strong>, {formatMoney(saving * 12)}/an.
                     </>
                   )}
                   {l.mode === 'amount' && avg > 0 && saving > avg && <span className="text-warning"> (plus que ta dépense actuelle !)</span>}
@@ -143,7 +143,7 @@ export default function SimulatorScreen() {
                 <span className="text-[20px]">{s.emoji ?? '📱'}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[16px]">{s.name}</span>
-                  <span className="text-[13px] text-label-2">{formatMoney(monthlyEquivalent(s.amount, s.frequency, s.interval))}/mois</span>
+                  <span className="text-[13px] text-negative">{formatMoney(monthlyEquivalent(s.amount, s.frequency, s.interval))}/mois</span>
                 </span>
                 <Toggle
                   checked={cancelled.includes(s.id)}

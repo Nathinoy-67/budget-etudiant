@@ -39,7 +39,7 @@ export function RecurringRow({ r, onClick }: { r: Recurring; onClick: () => void
         <Money
           cents={r.type === 'expense' ? -r.amount : r.amount}
           sign={r.type === 'income'}
-          className={`block text-[16px] font-semibold ${r.type === 'income' ? 'text-positive' : ''}`}
+          className={`block text-[16px] font-semibold ${r.type === 'income' ? 'text-positive' : 'text-negative'}`}
         />
         <span className="text-[12px] text-label-2">{frequencyShort(r.frequency, r.interval)}</span>
       </span>
@@ -83,15 +83,15 @@ export function RecurringsScreen() {
       <Card className="mb-7 grid grid-cols-3 divide-x divide-separator py-3.5 text-center">
         <div className="px-2">
           <p className="text-[12px] text-label-2">Revenus</p>
-          <Money cents={totals.income} compact className="text-[16px] font-semibold" />
+          <Money cents={totals.income} compact className="text-[16px] font-semibold text-positive" />
         </div>
         <div className="px-2">
           <p className="text-[12px] text-label-2">Charges</p>
-          <Money cents={totals.expense} compact className="text-[16px] font-semibold" />
+          <Money cents={totals.expense} compact className="text-[16px] font-semibold text-negative" />
         </div>
         <div className="px-2">
           <p className="text-[12px] text-label-2">Reste</p>
-          <Money cents={totals.income - totals.expense} compact className={`text-[16px] font-semibold ${totals.income - totals.expense < 0 ? 'text-negative' : ''}`} />
+          <Money cents={totals.income - totals.expense} compact colored className="text-[16px] font-semibold" />
         </div>
       </Card>
 
