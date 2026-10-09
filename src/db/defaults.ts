@@ -71,7 +71,7 @@ export function defaultSettings(now = Date.now()): Settings {
     lockAfterMinutes: 1,
     backupReminderDays: 14,
     lastBackupAt: null,
-    notifications: { dailyReminder: false, reminderTime: '21:00', budgetAlerts: true, subscriptionReminders: true },
+    notifications: { dailyReminder: false, reminderTime: '21:00' },
     notified: [],
     createdAt: now,
   };

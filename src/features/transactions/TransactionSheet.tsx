@@ -9,8 +9,7 @@ import { useTxSheet, toast } from '../../stores/ui';
 import { addDays, formatShortDate, isValidISO, relativeDayLabel } from '../../lib/dates';
 import { centsToInput, formatMoney, parseAmount } from '../../lib/money';
 import { haptic } from '../../lib/haptics';
-import { addRecurring, addTransaction, deleteTransaction, restoreTransactions, updateTransaction } from '../../db/actions';
-import { checkBudgetAfterChange } from '../alerts';
+import { addRecurring, addTransaction, deleteTransaction, makeRecurringFrom, restoreTransactions, stopRecurring, updateTransaction } from '../../db/actions';
 import { learnMerchantCategory } from '../applepay/receive';
 import type { Frequency, ID, ISODate } from '../../types';
 
@@ -18,13 +17,18 @@ type Kind = 'expense' | 'income';
 
 const NEW_LABEL: Record<Kind, string> = { expense: 'Nouvelle dépense', income: 'Nouveau revenu' };
 const ADDED_LABEL: Record<Kind, string> = { expense: 'Dépense ajoutée', income: 'Revenu ajouté' };
-const RECURRING_LABEL: Record<Kind, string> = { expense: 'Dépense récurrente créée', income: 'Revenu récurrent créé' };
+const RECURRING_LABEL: Record<Kind, string> = { expense: 'Abonnement enregistré : déduit chaque mois', income: 'Revenu régulier enregistré' };
+const REPEAT_LABEL: Record<Kind, string> = { expense: "C'est un abonnement", income: 'Revenu régulier' };
+const REPEAT_HINT: Record<Kind, string> = {
+  expense: 'Déduit de ton reste à vivre à chaque échéance, même avant le prélèvement',
+  income: 'Compté dans tes revenus à chaque échéance',
+};
 
 /** Saisie d'une dépense ou d'un revenu (tout passe par le compte courant). */
 export function TransactionSheet() {
   const data = useData();
   const { open, editing, preset, close } = useTxSheet();
-  const { categories, accounts, settings, today, transactions } = data;
+  const { categories, accounts, settings, today, transactions, recurrings } = data;
 
   const [type, setType] = useState<Kind>('expense');
   const [amount, setAmount] = useState('');
@@ -98,9 +102,16 @@ export function TransactionSheet() {
         // Correction de catégorie d'un paiement Apple Pay : on retient le choix pour ce commerçant
         if ((editing.source === 'applepay' || editing.source === 'import') && editing.merchant && payload.categoryId !== editing.categoryId)
           void learnMerchantCategory(data, editing.merchant, payload.categoryId);
-        haptic('success');
-        toast('Opération modifiée', { tone: 'success' });
-        void checkBudgetAfterChange(data, { ...editing, ...payload }, editing);
+        if (repeat && !editing.recurringId) {
+          // Marquée « abonnement » : cette opération devient la 1re échéance, les suivantes sont déduites d'avance
+          const cat = payload.categoryId ? data.categoryById.get(payload.categoryId) : null;
+          await makeRecurringFrom({ ...editing, ...payload }, { frequency, name: payload.note || cat?.name || NEW_LABEL[type], emoji: cat?.emoji });
+          haptic('success');
+          toast(RECURRING_LABEL[type], { tone: 'success' });
+        } else {
+          haptic('success');
+          toast('Opération modifiée', { tone: 'success' });
+        }
       } else if (repeat) {
         const cat = finalCat ? data.categoryById.get(finalCat) : null;
         await addRecurring({
@@ -111,8 +122,8 @@ export function TransactionSheet() {
           startDate: date,
           endDate: null,
           active: true,
-          isSubscription: false,
-          remindDaysBefore: 2,
+          isSubscription: type === 'expense',
+          remindDaysBefore: 0,
           emoji: cat?.emoji,
         });
         haptic('success');
@@ -123,7 +134,6 @@ export function TransactionSheet() {
         toast(`${ADDED_LABEL[type]} · ${formatMoney(cents)}`, {
           action: { label: 'Annuler', onClick: () => void deleteTransaction(tx.id) },
         });
-        void checkBudgetAfterChange(data, tx);
       }
       close();
     } catch (e) {
@@ -131,6 +141,15 @@ export function TransactionSheet() {
       toast("Impossible d'enregistrer", { tone: 'error' });
       setSaving(false);
     }
+  };
+
+  const linked = editing?.recurringId ? recurrings.find((r) => r.id === editing.recurringId) : undefined;
+  const linkedStopped = !!linked && (!linked.active || (!!linked.endDate && linked.endDate <= today));
+  const stop = async () => {
+    if (!linked) return;
+    await stopRecurring(linked.id, today);
+    haptic('medium');
+    toast(type === 'expense' ? 'Abonnement arrêté : il ne sera plus déduit' : 'Revenu régulier arrêté', { tone: 'success' });
   };
 
   const remove = async () => {
@@ -225,11 +244,29 @@ export function TransactionSheet() {
         className="mt-3 min-h-11 w-full rounded-xl bg-fill px-3.5 text-[16px] placeholder:text-label-3"
       />
 
-      {!editing && (
+      {editing?.recurringId ? (
+        <div className="mt-3 flex min-h-12 items-center gap-3 rounded-xl bg-fill px-3.5 py-2">
+          <Icon name="repeat" size={18} className="shrink-0 text-label-2" />
+          <span className="min-w-0 flex-1 text-[14px] text-label-2">
+            {linked
+              ? `${linked.isSubscription ? 'Abonnement' : type === 'income' ? 'Revenu régulier' : 'Charge fixe'} · ${formatMoney(linked.amount)}${linkedStopped ? ' · arrêté' : ''}`
+              : 'Opération récurrente'}
+            <span className="block text-[12px] text-label-3">La modifier ici ne change que celle-ci.</span>
+          </span>
+          {linked && !linkedStopped && (
+            <button onClick={() => void stop()} className="min-h-10 shrink-0 px-1 text-[15px] font-medium text-negative">
+              Arrêter
+            </button>
+          )}
+        </div>
+      ) : (
         <div className="mt-3 rounded-xl bg-fill px-3.5 py-1.5">
-          <div className="flex min-h-10 items-center justify-between">
-            <span className="text-[15px]">Répéter chaque mois, semaine…</span>
-            <Toggle checked={repeat} onChange={setRepeat} label="Répéter cette opération" />
+          <div className="flex min-h-10 items-center justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block text-[15px]">{REPEAT_LABEL[type]}</span>
+              {!repeat && <span className="block text-[12px] text-label-2">{REPEAT_HINT[type]}</span>}
+            </span>
+            <Toggle checked={repeat} onChange={setRepeat} label={REPEAT_LABEL[type]} />
           </div>
           {repeat && (
             <div className="pt-1 pb-2">
@@ -238,18 +275,18 @@ export function TransactionSheet() {
                 value={frequency}
                 onChange={setFrequency}
                 options={[
-                  { value: 'weekly', label: 'Semaine' },
-                  { value: 'monthly', label: 'Mois' },
-                  { value: 'yearly', label: 'Année' },
+                  { value: 'monthly', label: 'Chaque mois' },
+                  { value: 'yearly', label: 'Chaque année' },
+                  { value: 'weekly', label: 'Chaque semaine' },
                 ]}
               />
-              <p className="mt-2 text-[13px] text-label-2">Première fois le {formatShortDate(date, today)}, puis ajoutée automatiquement.</p>
+              <p className="mt-2 text-[13px] text-label-2">
+                {editing ? 'Cette opération' : `Le ${formatShortDate(date, today)}`} compte comme 1re échéance ; les suivantes sont{' '}
+                {type === 'expense' ? 'déduites de ton reste à vivre dès le début de chaque mois' : 'comptées dans tes revenus attendus'}.
+              </p>
             </div>
           )}
         </div>
-      )}
-      {editing?.recurringId && (
-        <p className="mt-3 text-[13px] text-label-2">Opération récurrente : la modifier ici ne change que celle-ci.</p>
       )}
     </Sheet>
   );

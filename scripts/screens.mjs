@@ -6,7 +6,7 @@ import { join } from 'node:path';
 
 const OUT = process.argv[2] ?? 'screens';
 const scheme = process.argv[3] ?? 'light';
-const BASE = 'http://localhost:5173/budget-etudiant/?noanim';
+const BASE = process.env.BASE ?? 'http://localhost:5173/budget-etudiant/?noanim';
 mkdirSync(OUT, { recursive: true });
 
 const browser = await webkit.launch();
@@ -33,6 +33,9 @@ await page.getByRole('button', { name: /données exemple/ }).click();
 await page.getByText('Données exemple chargées').waitFor({ timeout: 20000 });
 await page.waitForTimeout(3000); // laisse partir les toasts
 await shot('accueil');
+await page.getByRole('button', { name: /^Reste à vivre/ }).click();
+await shot('detail-calcul');
+await page.keyboard.press('Escape');
 await scroll(700);
 await shot('accueil-operations');
 await scroll(0);
@@ -53,6 +56,9 @@ await shot('revenus-charges');
 await back();
 await tab('Opérations');
 await shot('operations');
+await page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).first().click();
+await shot('modifier-operation');
+await page.keyboard.press('Escape');
 await page.getByRole('navigation').getByRole('button', { name: 'Ajouter une opération' }).click();
 await shot('saisie');
 console.log(errors.length ? `ERREURS:\n${errors.join('\n')}` : 'ok');

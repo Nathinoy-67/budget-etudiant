@@ -2,7 +2,7 @@ import type { Category, Recurring, Transaction } from '../types';
 import { db, uid } from './db';
 import { buildDefaultAccounts, buildDefaultCategories, defaultSettings } from './defaults';
 import { addDays, addMonths, diffDays, parts, todayISO, toISO } from '../lib/dates';
-import { resetAll, generateDueRecurring, type NewRecurring } from './actions';
+import { resetAll, generateDueRecurring, exportAll, importAll, type NewRecurring } from './actions';
 
 /** Générateur pseudo-aléatoire déterministe (mêmes données à chaque chargement). */
 function rng(seed: number) {
@@ -11,6 +11,31 @@ function rng(seed: number) {
     s = (s * 1664525 + 1013904223) % 4294967296;
     return s / 4294967296;
   };
+}
+
+/**
+ * Essai des données exemple sans rien perdre : les vraies données sont d'abord copiées de côté
+ * (table « vault », hors sauvegardes et réinitialisations), puis remplacées par l'exemple.
+ * Si l'exemple est déjà affiché, la copie existante est conservée (on ne la remplace pas par l'exemple).
+ * Pendant l'essai, le relais Apple Pay est coupé (pas de clé) : les paiements attendent sur le relais
+ * et arrivent dans les vraies données au retour.
+ */
+export async function startDemoMode(): Promise<void> {
+  const current = await db.settings.get('main');
+  if (!current?.demoMode) await db.vault.put({ id: 'real', savedAt: Date.now(), backup: await exportAll() });
+  await loadDemoData();
+  await db.settings.update('main', { demoMode: true });
+}
+
+/** Quitte les données exemple : remet les vraies données exactement comme avant. */
+export async function exitDemoMode(): Promise<boolean> {
+  const saved = await db.vault.get('real');
+  if (!saved) return false;
+  await importAll(saved.backup);
+  await db.settings.update('main', { demoMode: false });
+  await db.vault.delete('real');
+  await generateDueRecurring();
+  return true;
 }
 
 /** Remplace toutes les données par un jeu d'exemple réaliste sur ~3 mois (un seul compte courant). */

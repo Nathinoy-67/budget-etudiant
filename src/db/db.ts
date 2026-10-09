@@ -11,6 +11,14 @@ import type {
   SharedGroup,
   Transaction,
 } from '../types';
+import type { BackupFile } from '../lib/backup';
+
+/** Copie des vraies données mise de côté pendant l'essai des données exemple. */
+export interface VaultEntry {
+  id: 'real';
+  savedAt: number;
+  backup: BackupFile;
+}
 
 export class BudgetDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -23,6 +31,7 @@ export class BudgetDB extends Dexie {
   sharedExpenses!: Table<SharedExpense, string>;
   quickAdds!: Table<QuickAdd, string>;
   settings!: Table<Settings, string>;
+  vault!: Table<VaultEntry, string>;
 
   constructor() {
     super('budget-etudiant');
@@ -38,6 +47,8 @@ export class BudgetDB extends Dexie {
       quickAdds: 'id, order',
       settings: 'id',
     });
+    // v2 : copie de côté des vraies données pendant l'essai des données exemple
+    this.version(2).stores({ vault: 'id' });
   }
 }
 

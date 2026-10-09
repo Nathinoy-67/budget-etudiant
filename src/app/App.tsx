@@ -38,7 +38,7 @@ function Root() {
     if (!settings.pin) setLocked(false);
   }, [settings.pin, setLocked]);
 
-  // Retour au premier plan : verrouillage différé, génération des récurrences, alertes
+  // Retour au premier plan : verrouillage différé, génération des récurrences, rappel quotidien
   useEffect(() => {
     const onVisibility = async () => {
       if (document.visibilityState === 'hidden') {

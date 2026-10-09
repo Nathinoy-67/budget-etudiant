@@ -80,15 +80,27 @@ describe('computeSummary', () => {
   it('reste à vivre = revenus − charges fixes − dépenses', () => {
     expect(s.resteAVivre).toBe(80000 - 46199 - 3600);
   });
-  it('jours et budget par jour (aujourd’hui inclus)', () => {
+  it('jours écoulés et restants (aujourd’hui inclus)', () => {
     expect(s.daysTotal).toBe(31);
     expect(s.daysElapsed).toBe(7);
     expect(s.daysLeft).toBe(25);
-    expect(s.dailyAllowance).toBe(Math.floor(30201 / 25));
   });
-  it('prévision fin de mois au rythme actuel', () => {
-    expect(s.projectedVariable).toBe(Math.round((3600 / 7) * 31));
-    expect(s.projectedEnd).toBe(80000 - 46199 - s.projectedVariable);
+  it('somme à garder en fin de mois déduite du reste à vivre', () => {
+    const k = computeSummary(transactions, [job, apl, loyer, spotify], period, today, 2000);
+    expect(k.keepAtEnd).toBe(2000);
+    expect(k.resteAVivre).toBe(80000 - 46199 - 3600 - 2000);
+    expect(k.engagedPct).toBeCloseTo(((46199 + 3600) / (80000 - 2000)) * 100);
+  });
+  it('un gros achat ne compte qu’une fois (aucune extrapolation)', () => {
+    const big = computeSummary([tx({ amount: 15000, date: '2026-10-02' })], [], period, today);
+    expect(big.resteAVivre).toBe(-15000);
+    expect(big.variableSpent).toBe(15000);
+  });
+  it('un abonnement pas encore prélevé réduit déjà le reste à vivre', () => {
+    const income = rec({ type: 'income', amount: 20000, startDate: '2026-10-01', lastGenerated: '2026-10-07' });
+    const sub = rec({ amount: 799, startDate: '2026-10-18', lastGenerated: null, isSubscription: true });
+    const r = computeSummary([tx({ type: 'income', amount: 20000, date: '2026-10-01', recurringId: income.id })], [income, sub], period, today);
+    expect(r.resteAVivre).toBe(20000 - 799);
   });
   it('liste les échéances à venir triées', () => {
     expect(s.upcoming.map((u) => u.date)).toEqual(['2026-10-20', '2026-10-25']);
@@ -105,14 +117,12 @@ describe('computeSummary', () => {
   it('données vides : tout à zéro, pas de NaN', () => {
     const e = computeSummary([], [], period, today);
     expect(e.resteAVivre).toBe(0);
-    expect(e.dailyAllowance).toBe(0);
     expect(e.engagedPct).toBe(0);
-    expect(Number.isNaN(e.projectedEnd)).toBe(false);
+    expect(Number.isNaN(e.engagedPct)).toBe(false);
   });
-  it('budget par jour jamais négatif', () => {
+  it('dépenses sans revenus : 100 % engagé', () => {
     const e = computeSummary([tx({ amount: 100000, date: '2026-10-02' })], [], period, today);
     expect(e.resteAVivre).toBe(-100000);
-    expect(e.dailyAllowance).toBe(0);
     expect(e.engagedPct).toBe(100);
   });
   it('période passée : 0 jour restant', () => {

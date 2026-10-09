@@ -2,7 +2,7 @@ import type { Category, ID, ISODate, Recurring, Settings, Transaction } from '..
 import { db, uid } from './db';
 import { buildDefaultAccounts, buildDefaultCategories, defaultSettings } from './defaults';
 import { addDays, todayISO } from '../lib/dates';
-import { pendingOccurrences } from '../lib/recurrence';
+import { occurrencesBetween, pendingOccurrences } from '../lib/recurrence';
 import { TABLE_NAMES, makeBackup, type BackupData, type BackupFile } from '../lib/backup';
 
 // ---------- Initialisation ----------
@@ -79,6 +79,67 @@ export async function deleteTransaction(id: ID): Promise<Transaction | undefined
 
 export async function restoreTransactions(ts: Transaction[]): Promise<void> {
   await db.transactions.bulkPut(ts);
+}
+
+/**
+ * Ajoute un paiement reçu automatiquement (Apple Pay). S'il correspond à une échéance d'abonnement
+ * ou de charge fixe (même montant, à 3 jours près), il prend la place de cette échéance au lieu de
+ * s'y ajouter : l'abonnement n'est jamais compté deux fois.
+ */
+export async function addPaymentMatchingRecurring(t: NewTransaction & { id?: ID; createdAt?: number }): Promise<Transaction> {
+  return db.transaction('rw', [db.recurrings, db.transactions], async () => {
+    const recs = (await db.recurrings.toArray()).filter((r) => r.active && r.type === t.type && r.amount === t.amount);
+    for (const r of recs) {
+      for (const occurrence of occurrencesBetween(r, addDays(t.date, -3), addDays(t.date, 3))) {
+        const generated = await db.transactions.where('[recurringId+occurrence]').equals([r.id, occurrence]).first();
+        if (generated?.source) continue; // échéance déjà rapprochée d'un vrai paiement
+        if (generated) await db.transactions.delete(generated.id);
+        return addTransaction({ ...t, recurringId: r.id, occurrence, categoryId: generated?.categoryId ?? r.categoryId ?? t.categoryId, note: r.name });
+      }
+    }
+    return addTransaction(t);
+  });
+}
+
+/**
+ * Transforme une opération existante en abonnement (ou revenu régulier) : crée la récurrence
+ * à partir de sa date et rattache l'opération à cette première échéance (pas de doublon).
+ */
+export async function makeRecurringFrom(
+  tx: Transaction,
+  opts: { frequency: Recurring['frequency']; name: string; emoji?: string },
+): Promise<Recurring> {
+  const full: Recurring = {
+    name: opts.name,
+    type: tx.type,
+    amount: tx.amount,
+    categoryId: tx.categoryId,
+    accountId: tx.accountId,
+    toAccountId: null,
+    frequency: opts.frequency,
+    interval: 1,
+    startDate: tx.date,
+    endDate: null,
+    skipped: [],
+    lastGenerated: tx.date,
+    active: true,
+    isSubscription: tx.type === 'expense',
+    remindDaysBefore: 0,
+    emoji: opts.emoji,
+    id: uid(),
+    createdAt: Date.now(),
+  };
+  await db.transaction('rw', [db.recurrings, db.transactions], async () => {
+    await db.recurrings.add(full);
+    await db.transactions.update(tx.id, { recurringId: full.id, occurrence: tx.date, updatedAt: Date.now() });
+  });
+  await generateDueRecurring();
+  return full;
+}
+
+/** Arrête un abonnement : plus aucune échéance après aujourd'hui (l'historique est conservé). */
+export async function stopRecurring(id: ID, today: ISODate = todayISO()): Promise<void> {
+  await db.recurrings.update(id, { endDate: today });
 }
 
 // ---------- Opérations récurrentes ----------
@@ -241,7 +302,8 @@ export async function importAll(backup: BackupFile): Promise<void> {
     // une sauvegarde sans réglages (ou d'une autre version) reste utilisable
     const s = await db.settings.get('main');
     if (!s) await db.settings.add({ ...defaultSettings(), onboarded: true });
-    else await db.settings.put({ ...defaultSettings(), ...s, notified: s.notified ?? [] });
+    // une sauvegarde restaurée devient les vraies données (même si elle a été faite pendant l'essai de l'exemple)
+    else await db.settings.put({ ...defaultSettings(), ...s, notified: s.notified ?? [], demoMode: false });
   });
 }
 
@@ -249,6 +311,12 @@ export async function resetAll(): Promise<void> {
   await db.transaction('rw', allTables(), async () => {
     for (const t of allTables()) await t.clear();
   });
+}
+
+/** Efface vraiment tout, y compris les données mises de côté pendant l'essai des données exemple. */
+export async function eraseEverything(): Promise<void> {
+  await resetAll();
+  await db.vault.clear();
   try {
     localStorage.removeItem('be-theme');
   } catch {

@@ -36,6 +36,19 @@ const countTx = () =>
       }),
   );
 const step = (name) => console.log(`✓ ${name}`);
+const euros = (text) => Number(text.replace(/[^\d,−-]/g, '').replace('−', '-').replace(',', '.'));
+const resteAVivre = async () => euros((await page.getByRole('button', { name: /^Reste à vivre/ }).getAttribute('aria-label')).split('.')[0]);
+const recurringCount = () =>
+  page.evaluate(
+    () =>
+      new Promise((res) => {
+        const r = indexedDB.open('budget-etudiant');
+        r.onsuccess = () => {
+          const q = r.result.transaction('recurrings').objectStore('recurrings').count();
+          q.onsuccess = () => res(q.result);
+        };
+      }),
+  );
 
 await page.goto(BASE);
 await page.getByRole('button', { name: /données exemple/ }).click();
@@ -48,7 +61,22 @@ step(`démo chargée (${initial} opérations)`);
 assert.equal(await page.getByText('Ajout rapide').count(), 0, "plus d'ajout rapide");
 assert.equal(await page.getByRole('navigation').getByRole('button').count(), 5, '4 onglets + bouton +');
 assert.ok((await page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).count()) > 0, "opérations sur l'accueil");
-step('accueil : 4 onglets dont Opérations et Réglages, opérations récentes');
+assert.equal(await page.getByText('Fin du mois', { exact: true }).count(), 0, 'plus de prévision de fin de mois');
+assert.equal(await page.getByText(/par jour/).count(), 0, 'plus de moyenne par jour');
+assert.ok(await page.getByText('Données exemple', { exact: true }).isVisible(), 'bandeau données exemple');
+step('accueil : 4 onglets, opérations récentes, ni prévision ni moyenne par jour');
+
+// --- Somme à garder en fin de mois ---
+const ravBefore = await resteAVivre();
+await tab('Réglages');
+await page.getByRole('button', { name: /À garder en fin de mois/ }).click();
+await keypad(['2', '0']);
+await page.getByRole('button', { name: 'Enregistrer' }).click();
+await page.getByText(/Il te restera au moins 20,00/).waitFor();
+await tab('Accueil');
+await page.getByText(/en gardant/).waitFor();
+assert.equal(Math.round((ravBefore - (await resteAVivre())) * 100), 2000, 'les 20 € à garder sont retirés du reste à vivre');
+step('somme à garder en fin de mois retirée du reste à vivre');
 
 // --- Ajout d'une dépense (sans choix de compte ni virement) ---
 await page.getByRole('button', { name: 'Ajouter une opération' }).click();
@@ -73,6 +101,20 @@ await page.getByRole('button', { name: 'Enregistrer' }).click();
 await page.getByText('Opération modifiée').waitFor();
 assert.ok(await page.getByText('−9,90 €').locator('visible=true').first().isVisible(), 'montant modifié');
 step('recherche et modification');
+
+// --- Marquer une opération existante comme abonnement ---
+const recBefore = await recurringCount();
+await page.getByLabel('Rechercher une opération').fill('ciné');
+await page.getByRole('button', { name: /Ciné, dépense/ }).first().click();
+await page.getByRole('switch', { name: "C'est un abonnement" }).click();
+await page.getByRole('button', { name: 'Enregistrer' }).click();
+await page.getByText(/Abonnement enregistré/).waitFor();
+assert.equal(await recurringCount(), recBefore + 1, 'abonnement créé');
+await page.getByRole('button', { name: /Ciné, dépense/ }).first().click();
+await page.getByRole('button', { name: 'Arrêter' }).click();
+await page.getByText(/Abonnement arrêté/).waitFor();
+await page.keyboard.press('Escape');
+step('opération marquée « abonnement » puis abonnement arrêté');
 
 // --- Suppression par glissement + annulation ---
 await page.getByLabel('Rechercher une opération').fill('');
@@ -105,7 +147,7 @@ step('filtre par type');
 
 // --- Glisser depuis le bord pour revenir (depuis un écran ouvert dans les Réglages) ---
 await settings('Revenus et charges fixes');
-await page.getByText('Charges fixes').first().waitFor();
+await page.getByRole('heading', { name: 'Revenus et charges' }).waitFor();
 await page.locator('div.touch-none.w-4').last().evaluate(async (el) => {
   const r = el.getBoundingClientRect();
   const o = (x) => ({ bubbles: true, cancelable: true, pointerId: 2, pointerType: 'touch', isPrimary: true, clientX: x, clientY: r.y + 200, button: 0, buttons: 1 });
@@ -168,6 +210,15 @@ await confirm('Remplacer mes données');
 await page.getByText('Sauvegarde restaurée').waitFor();
 assert.equal(await countTx(), exported, 'import restaure toutes les opérations');
 step('réinitialisation puis import JSON');
+
+// --- Essai des données exemple sans perdre les vraies ---
+await page.getByRole('button', { name: /Essayer les données exemple/ }).click();
+await confirm('Essayer');
+await page.getByText('Données exemple chargées').waitFor({ timeout: 20000 });
+await page.getByRole('button', { name: /Revenir à mes vraies données/ }).click();
+await page.getByText('Tes vraies données sont revenues').waitFor();
+assert.equal(await countTx(), exported, 'vraies données restaurées à l’identique');
+step('données exemple essayées puis vraies données retrouvées');
 
 // --- Code PIN ---
 await page.getByRole('switch', { name: 'Activer le code PIN' }).click();

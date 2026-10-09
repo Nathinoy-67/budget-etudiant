@@ -5,8 +5,7 @@ import { Sheet } from '../../components/Sheet';
 import { confirmAction } from '../../components/Overlays';
 import { useData } from '../../hooks/useData';
 import { toast, useLock } from '../../stores/ui';
-import { updateSettings, resetAll, ensureInitialized } from '../../db/actions';
-import { loadDemoData } from '../../db/demo';
+import { updateSettings, eraseEverything, ensureInitialized } from '../../db/actions';
 import { CURRENCIES } from '../../db/defaults';
 import { biometricAvailable, hashPin, registerBiometric, verifyPin } from '../../lib/security';
 import { isStandalone, notificationPermission, notificationsSupported, notify, requestNotificationPermission } from '../../lib/notifications';
@@ -14,6 +13,9 @@ import { buildIcs } from '../../lib/ics';
 import { saveFile } from '../../lib/files';
 import { haptic } from '../../lib/haptics';
 import { exportCSV, exportJSON, pickAndImportJSON } from './backupActions';
+import { backToRealData, tryDemoData } from './demoActions';
+import { KeepAtEndSheet } from './KeepAtEndSheet';
+import { formatMoney } from '../../lib/money';
 import { useNav } from '../../stores/nav';
 import { PinPad } from '../security/LockScreen';
 import type { ThemePref } from '../../types';
@@ -21,9 +23,10 @@ import type { ThemePref } from '../../types';
 const selectCls = 'min-h-11 max-w-[55%] appearance-none bg-transparent text-right text-[16px] text-label-2 outline-none';
 
 export function SettingsScreen() {
-  const { settings, today, transactions } = useData();
+  const { settings, today } = useData();
   const push = useNav((s) => s.push);
   const [pinSheet, setPinSheet] = useState<'set' | 'disable' | null>(null);
+  const [editKeep, setEditKeep] = useState(false);
   const [bioAvailable, setBioAvailable] = useState(false);
   const [perm, setPerm] = useState(notificationPermission());
   const [persisted, setPersisted] = useState<boolean | null>(null);
@@ -87,6 +90,14 @@ export function SettingsScreen() {
         <List>
           <Row icon="upload" title="Importer un relevé bancaire" subtitle="Récupère tes opérations d'un coup (CSV, OFX)" chevron onClick={() => push('import')} />
           <Row icon="repeat" title="Revenus et charges fixes" subtitle="Salaire, APL, loyer, abonnements…" chevron onClick={() => push('recurrings')} />
+          <Row
+            icon="piggy"
+            title="À garder en fin de mois"
+            subtitle="Minimum qui doit rester sur le compte"
+            value={settings.keepAtEnd ? formatMoney(settings.keepAtEnd) : 'Aucun'}
+            chevron
+            onClick={() => setEditKeep(true)}
+          />
           <Row icon="tag" title="Catégories" chevron onClick={() => push('categories')} />
           <Row
             icon="zap"
@@ -168,7 +179,7 @@ export function SettingsScreen() {
         footer={
           !notifSupported
             ? "Sur iPhone, les notifications nécessitent iOS 16.4+ et l'appli ajoutée à l'écran d'accueil (Partager → Sur l'écran d'accueil)."
-            : 'Les alertes sont envoyées quand tu ouvres l’appli. Pour un rappel quotidien même appli fermée, ajoute-le au Calendrier.'
+            : 'Le rappel est envoyé quand tu ouvres l’appli. Pour un rappel quotidien même appli fermée, ajoute-le au Calendrier.'
         }
       >
         <List>
@@ -176,12 +187,6 @@ export function SettingsScreen() {
             <Row icon="bell" iconBg="#E5484D" title="Autoriser les notifications" subtitle={perm === 'denied' ? 'Refusées — à réactiver dans Réglages iPhone' : undefined} chevron onClick={() => void askNotif()} />
           )}
           {!notifSupported && !standalone && <Row icon="info" iconBg="#8D8D8D" title="Installe l'appli pour les notifications" />}
-          <Row icon="pie" iconBg="#F76B15" title="Alertes de budget (80 % / 100 %)">
-            <Toggle checked={notif.budgetAlerts} onChange={(v) => set({ notifications: { ...notif, budgetAlerts: v } })} label="Alertes de budget" />
-          </Row>
-          <Row icon="card" iconBg="#8E4EC6" title="Renouvellements d'abonnements">
-            <Toggle checked={notif.subscriptionReminders} onChange={(v) => set({ notifications: { ...notif, subscriptionReminders: v } })} label="Rappels d'abonnements" />
-          </Row>
           <Row icon="bell" iconBg="#0090FF" title="Rappel quotidien">
             <Toggle checked={notif.dailyReminder} onChange={(v) => set({ notifications: { ...notif, dailyReminder: v } })} label="Rappel quotidien" />
           </Row>
@@ -228,24 +233,23 @@ export function SettingsScreen() {
 
       <Section title="Données">
         <List>
-          <Row
-            icon="sparkles"
-            iconBg="#8E4EC6"
-            title="Charger des données exemple"
-            subtitle="Remplace tes données par 3 mois fictifs"
-            onClick={async () => {
-              const ok = await confirmAction({
-                title: 'Charger les données exemple ?',
-                message: transactions.length ? 'Tes données actuelles seront remplacées. Pense à faire une sauvegarde avant.' : undefined,
-                confirmLabel: 'Charger',
-                destructive: transactions.length > 0,
-              });
-              if (!ok) return;
-              toast('Chargement des données exemple…');
-              await loadDemoData();
-              toast('Données exemple chargées', { tone: 'success' });
-            }}
-          />
+          {settings.demoMode ? (
+            <Row
+              icon="refresh"
+              iconBg="#30A46C"
+              title="Revenir à mes vraies données"
+              subtitle="Les données exemple sont effacées, les tiennes reviennent"
+              onClick={() => void backToRealData()}
+            />
+          ) : (
+            <Row
+              icon="sparkles"
+              iconBg="#8E4EC6"
+              title="Essayer les données exemple"
+              subtitle="Tes vraies données sont mises de côté, puis remises"
+              onClick={() => void tryDemoData(false)}
+            />
+          )}
           <Row
             icon="trash"
             iconBg="#E5484D"
@@ -254,14 +258,14 @@ export function SettingsScreen() {
             onClick={async () => {
               const ok = await confirmAction({
                 title: 'Effacer toutes les données ?',
-                message: 'Opérations, comptes, objectifs, réglages… Cette action est définitive.',
+                message: 'Opérations, revenus, abonnements, réglages… Cette action est définitive.',
                 confirmLabel: 'Tout effacer',
                 destructive: true,
               });
               if (!ok) return;
               const sure = await confirmAction({ title: 'Vraiment sûr ? Aucune annulation possible.', confirmLabel: 'Oui, tout effacer', destructive: true });
               if (!sure) return;
-              await resetAll();
+              await eraseEverything();
               await ensureInitialized();
               toast('Toutes les données ont été effacées');
             }}
@@ -278,6 +282,7 @@ export function SettingsScreen() {
       </Section>
 
       <PinSheet mode={pinSheet} onClose={() => setPinSheet(null)} />
+      <KeepAtEndSheet open={editKeep} onClose={() => setEditKeep(false)} current={settings.keepAtEnd ?? 0} />
     </Screen>
   );
 }

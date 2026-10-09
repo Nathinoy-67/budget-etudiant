@@ -4,7 +4,7 @@ import { Button, TextInput, Toggle } from '../../components/ui';
 import { useData } from '../../hooks/useData';
 import { addRecurring, updateSettings } from '../../db/actions';
 import { db } from '../../db/db';
-import { loadDemoData } from '../../db/demo';
+import { startDemoMode } from '../../db/demo';
 import { daysInMonth, parts, toISO } from '../../lib/dates';
 import { formatMoney, parseAmount } from '../../lib/money';
 import { haptic } from '../../lib/haptics';
@@ -129,7 +129,7 @@ export function Onboarding() {
 
   const demo = async () => {
     setBusy(true);
-    await loadDemoData();
+    await startDemoMode();
     toast('Données exemple chargées, explore l’appli', { tone: 'success' });
   };
 
@@ -190,7 +190,7 @@ export function Onboarding() {
         <div className="mt-5 rounded-2xl bg-card p-4 text-center shadow-card">
           <p className="text-[15px] text-label-2">Après le loyer, il te reste</p>
           <p className="text-[30px] font-semibold tracking-[-0.02em] tabular">{formatMoney(totalIncome - rentCents)}</p>
-          <p className="text-[15px] text-label-2">soit environ {formatMoney(Math.max(0, Math.floor((totalIncome - rentCents) / 30)))} par jour</p>
+          <p className="text-[15px] text-label-2">chaque mois pour vivre</p>
         </div>
       )}
     </div>,

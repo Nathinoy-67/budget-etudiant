@@ -1,8 +1,23 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { db } from './db';
-import { loadDemoData } from './demo';
-import { generateDueRecurring, skipOccurrence, unskipOccurrence, addRecurring, deleteTransaction, ensureInitialized, resetAll, simplifyToSingleAccount } from './actions';
+import { exitDemoMode, loadDemoData, startDemoMode } from './demo';
+import {
+  addPaymentMatchingRecurring,
+  addRecurring,
+  addTransaction,
+  deleteTransaction,
+  ensureInitialized,
+  eraseEverything,
+  generateDueRecurring,
+  makeRecurringFrom,
+  resetAll,
+  simplifyToSingleAccount,
+  skipOccurrence,
+  stopRecurring,
+  unskipOccurrence,
+  updateSettings,
+} from './actions';
 import { todayISO } from '../lib/dates';
 
 describe('données de démonstration', () => {
@@ -80,5 +95,72 @@ describe('passage à un seul compte', () => {
     expect(accounts.find((a) => a.id === 'especes')?.archived).toBe(true);
     expect(await db.transactions.count()).toBe(1);
     expect((await db.settings.get('main'))?.defaultAccountId).toBe(main.id);
+  });
+});
+
+describe('essai des données exemple', () => {
+  it('met les vraies données de côté puis les restaure à l’identique', async () => {
+    await eraseEverything();
+    await ensureInitialized();
+    await updateSettings({ onboarded: true, relayKey: 'cle-secrete', keepAtEnd: 2000 });
+    const [account] = await db.accounts.toArray();
+    await db.transactions.add({ id: 'vraie', type: 'expense', amount: 1234, date: '2026-10-02', categoryId: null, accountId: account.id, note: 'Vraie', createdAt: 0, updatedAt: 0 });
+
+    await startDemoMode();
+    expect(await db.transactions.get('vraie')).toBeUndefined();
+    expect((await db.settings.get('main'))?.demoMode).toBe(true);
+    expect((await db.settings.get('main'))?.relayKey).toBeFalsy(); // relais Apple Pay coupé pendant l'essai
+    // recharger l'exemple ne doit pas écraser la copie des vraies données
+    await startDemoMode();
+
+    expect(await exitDemoMode()).toBe(true);
+    const s = await db.settings.get('main');
+    expect(await db.transactions.count()).toBe(1);
+    expect((await db.transactions.get('vraie'))?.amount).toBe(1234);
+    expect(s?.relayKey).toBe('cle-secrete');
+    expect(s?.keepAtEnd).toBe(2000);
+    expect(s?.demoMode).toBe(false);
+    expect(await db.vault.count()).toBe(0);
+    expect(await exitDemoMode()).toBe(false);
+  });
+});
+
+describe('abonnements', () => {
+  const base = async () => {
+    await eraseEverything();
+    await ensureInitialized();
+    return (await db.accounts.toArray())[0];
+  };
+
+  it('une opération marquée « abonnement » devient la 1re échéance, sans doublon', async () => {
+    const account = await base();
+    const tx = await addTransaction({ type: 'expense', amount: 799, date: '2026-08-18', categoryId: null, accountId: account.id, note: 'Netflix', recurringId: null, occurrence: null });
+    const r = await makeRecurringFrom(tx, { frequency: 'monthly', name: 'Netflix' });
+    expect(r.isSubscription).toBe(true);
+    const linked = await db.transactions.where('recurringId').equals(r.id).toArray();
+    expect(linked.filter((t) => t.date === '2026-08-18')).toHaveLength(1);
+    expect(linked.some((t) => t.date === '2026-09-18')).toBe(true);
+
+    await stopRecurring(r.id, '2026-09-20');
+    const before = await db.transactions.count();
+    await generateDueRecurring('2026-12-31');
+    expect(await db.transactions.count()).toBe(before);
+  });
+
+  it('un paiement Apple Pay remplace l’échéance de l’abonnement au lieu de s’y ajouter', async () => {
+    const account = await base();
+    const today = todayISO();
+    const r = await addRecurring({
+      name: 'Spotify', type: 'expense', amount: 599, categoryId: null, accountId: account.id, toAccountId: null,
+      frequency: 'monthly', interval: 1, startDate: today, endDate: null, active: true, isSubscription: true, remindDaysBefore: 0,
+    });
+    expect(await db.transactions.where('recurringId').equals(r.id).count()).toBe(1);
+    const pay = await addPaymentMatchingRecurring({ id: 'relay-1', type: 'expense', amount: 599, date: today, categoryId: null, accountId: account.id, note: 'SPOTIFY', recurringId: null, occurrence: null, source: 'applepay' });
+    expect(pay.recurringId).toBe(r.id);
+    expect(await db.transactions.where('recurringId').equals(r.id).count()).toBe(1);
+    expect(await db.transactions.count()).toBe(1);
+    // autre montant : simple dépense
+    const other = await addPaymentMatchingRecurring({ type: 'expense', amount: 450, date: today, categoryId: null, accountId: account.id, note: 'Boulangerie', recurringId: null, occurrence: null, source: 'applepay' });
+    expect(other.recurringId).toBeNull();
   });
 });

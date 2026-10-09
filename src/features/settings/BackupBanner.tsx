@@ -24,7 +24,7 @@ export function BackupBanner() {
   const last = settings.lastBackupAt ?? settings.createdAt;
   const due = now - last > settings.backupReminderDays * DAY;
   const enoughData = transactions.length >= 5;
-  if (!due || !enoughData || snoozedUntil > now || settings.backupReminderDays <= 0) return null;
+  if (settings.demoMode || !due || !enoughData || snoozedUntil > now || settings.backupReminderDays <= 0) return null;
 
   const days = Math.floor((now - last) / DAY);
   const snooze = () => {

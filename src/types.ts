@@ -82,7 +82,7 @@ export interface Recurring {
   lastGenerated: ISODate | null;
   active: boolean;
   isSubscription: boolean;
-  /** Rappel N jours avant le renouvellement (abonnements). */
+  /** Ancien rappel avant renouvellement (plus utilisé). */
   remindDaysBefore: number;
   emoji?: string;
   createdAt: number;
@@ -156,8 +156,9 @@ export type ThemePref = 'system' | 'light' | 'dark';
 export interface NotificationPrefs {
   dailyReminder: boolean;
   reminderTime: string; // HH:MM
-  budgetAlerts: boolean;
-  subscriptionReminders: boolean;
+  /** Anciennes alertes (budget, renouvellement d'abonnement), retirées : ignorées si présentes. */
+  budgetAlerts?: boolean;
+  subscriptionReminders?: boolean;
 }
 
 export interface Settings {
@@ -165,6 +166,10 @@ export interface Settings {
   currency: string;
   /** Premier jour de la période budgétaire (1–31, borné au dernier jour du mois). */
   monthStartDay: number;
+  /** Somme minimale à garder sur le compte à la fin du mois (déduite du reste à vivre). */
+  keepAtEnd?: Cents;
+  /** Données exemple chargées : les vraies données sont mises de côté (table « vault »). */
+  demoMode?: boolean;
   theme: ThemePref;
   onboarded: boolean;
   defaultAccountId: ID | null;

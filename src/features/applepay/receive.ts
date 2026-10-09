@@ -1,11 +1,10 @@
 import type { AppData } from '../../hooks/useData';
 import { db } from '../../db/db';
-import { addTransaction, updateSettings } from '../../db/actions';
+import { addPaymentMatchingRecurring, updateSettings } from '../../db/actions';
 import { guessCategory, merchantKey, parseIncomingPayment, prettyMerchant, type IncomingPayment } from '../../lib/merchant';
 import { formatMoney } from '../../lib/money';
 import { haptic } from '../../lib/haptics';
 import { toast, useTxSheet } from '../../stores/ui';
-import { checkBudgetAfterChange } from '../alerts';
 import { isIOSSafariTab } from '../../lib/notifications';
 import type { ID, ISODate, Transaction } from '../../types';
 
@@ -34,7 +33,7 @@ export async function recordApplePayment(
     null;
   const accountId = data.settings.defaultAccountId ?? data.accounts.find((a) => !a.archived)?.id;
   if (!accountId) return null;
-  return addTransaction({
+  return addPaymentMatchingRecurring({
     id: opts.id,
     createdAt: opts.createdAt,
     type: 'expense',
@@ -67,7 +66,6 @@ export function announcePayments(data: AppData, txs: Transaction[]) {
     const total = txs.reduce((s, t) => s + t.amount, 0);
     toast(`${txs.length} paiements Apple Pay ajoutés (${formatMoney(total)})`, { tone: 'success', duration: 6000 });
   }
-  for (const tx of txs) void checkBudgetAfterChange(data, tx);
 }
 
 /**

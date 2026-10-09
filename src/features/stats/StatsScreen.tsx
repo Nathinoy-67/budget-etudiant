@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Screen } from '../../components/Screen';
 import { Card, IconButton, List, Money, ProgressBar, Section, levelColor } from '../../components/ui';
 import { Icon } from '../../components/Icon';
@@ -7,11 +7,11 @@ import { AmountSheet } from '../../components/AmountSheet';
 import { useData } from '../../hooks/useData';
 import { useNav } from '../../stores/nav';
 import { toast, useTxSheet } from '../../stores/ui';
-import { addDays, diffDays, formatMonthShort, formatShortDate, periodLabel, shiftPeriod } from '../../lib/dates';
+import { addDays, diffDays, formatMonthShort, formatShortDate, inPeriod, periodLabel, shiftPeriod } from '../../lib/dates';
 import { formatMoney } from '../../lib/money';
 import { budgetLevel } from '../../lib/budget';
 import { averageMonthlyByCategory } from '../../lib/simulator';
-import { averagePerDay, cumulativeSpending, periodHistory, topExpenses, totalsByCategory, totalsForPeriod } from '../../lib/stats';
+import { periodHistory, topExpenses, totalsByCategory, totalsForPeriod } from '../../lib/stats';
 import { setCategoryBudget } from '../../db/actions';
 import type { Category } from '../../types';
 
@@ -95,7 +95,11 @@ export default function StatsScreen() {
   const averages = useMemo(() => averageMonthlyByCategory(transactions, today), [transactions, today]);
 
   const daysElapsed = isCurrent ? diffDays(period.start, today) + 1 : diffDays(period.start, period.end) + 1;
-  const avgDay = averagePerDay(totals.expense, daysElapsed);
+  // Abonnements et charges fixes réellement passés sur le mois affiché
+  const fixedSpent = useMemo(
+    () => transactions.reduce((sum, t) => (t.type === 'expense' && t.recurringId && inPeriod(t.date, period) ? sum + t.amount : sum), 0),
+    [transactions, period],
+  );
   // Mois en cours : comparaison à la même date du mois précédent (pas au mois complet)
   const prevTotals = useMemo(
     () => totalsForPeriod(transactions, isCurrent ? { start: previous.start, end: addDays(previous.start, daysElapsed - 1) } : previous),
@@ -120,16 +124,6 @@ export default function StatsScreen() {
   }, [byCat, categoryById]);
   const sliceColor = (id: string) => pieData.find((p) => p.id === id)?.color ?? (spentMap.get(id) ? '#8D8D8D' : 'transparent');
 
-  // Rythme : dépenses cumulées comparées au mois précédent
-  const cumul = useMemo(() => {
-    const cur = cumulativeSpending(transactions, period, isCurrent ? today : undefined);
-    const prev = cumulativeSpending(transactions, previous);
-    const len = Math.max(diffDays(period.start, period.end) + 1, prev.length);
-    return Array.from({ length: len }, (_, i) => ({ day: i + 1, current: cur[i] ?? null, previous: prev[i] ?? null }));
-  }, [transactions, period, previous, isCurrent, today]);
-  const samePointPrev = cumul[Math.min(daysElapsed, cumul.length) - 1]?.previous ?? 0;
-  const paceDelta = (cumul[daysElapsed - 1]?.current ?? totals.expense) - samePointPrev;
-
   const historyData = history.map((h) => ({ label: formatMonthShort(h.period.start), Revenus: h.income, Dépenses: h.expense }));
 
   return (
@@ -148,7 +142,7 @@ export default function StatsScreen() {
         <Delta current={totals.expense} previous={prevTotals.expense} label={vsLabel} />
         <div className="mt-4 grid grid-cols-3 divide-x divide-separator border-t border-separator pt-3.5 text-center">
           <SmallMetric label="Revenus" value={<Money cents={totals.income} compact />} />
-          <SmallMetric label="Par jour" value={<Money cents={avgDay} compact />} />
+          <SmallMetric label="Abonnements" hint="et charges fixes" value={<Money cents={fixedSpent} compact />} />
           <SmallMetric
             label="Solde"
             hint="revenus − dépenses"
@@ -218,43 +212,6 @@ export default function StatsScreen() {
           </div>
         </Card>
       </Section>
-
-      {/* Rythme */}
-      <ChartCard
-        title="Rythme de dépenses"
-        subtitle={
-          samePointPrev > 0 ? (
-            <>
-              À cette date, tu as dépensé{' '}
-              <strong className={paceDelta > 0 ? 'text-negative' : 'text-positive'}>
-                {euros(Math.abs(paceDelta))} {paceDelta > 0 ? 'de plus' : 'de moins'}
-              </strong>{' '}
-              que le mois précédent.
-            </>
-          ) : (
-            'Pas encore de données le mois précédent.'
-          )
-        }
-      >
-        <Legend
-          items={[
-            { label: periodLabel(period), color: 'var(--series-1)' },
-            { label: periodLabel(previous), color: 'var(--series-2)', dashed: true },
-          ]}
-        />
-        <div className="h-[170px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={cumul} margin={{ top: 6, right: 6, bottom: 0, left: -12 }}>
-              <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-              <XAxis dataKey="day" tick={AXIS} tickLine={false} axisLine={false} interval={6} />
-              <YAxis tick={AXIS} tickLine={false} axisLine={false} tickFormatter={shortEuros} width={52} />
-              <Tooltip content={<ChartTooltip labelFormat={(l) => `Jour ${l}`} />} cursor={{ stroke: 'var(--label-3)', strokeWidth: 1 }} />
-              <Line type="monotone" dataKey="previous" name="Mois précédent" stroke="var(--series-2)" strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls />
-              <Line type="monotone" dataKey="current" name="Ce mois" stroke="var(--series-1)" strokeWidth={2} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--card)' }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </ChartCard>
 
       {/* 6 derniers mois */}
       <ChartCard title="6 derniers mois">

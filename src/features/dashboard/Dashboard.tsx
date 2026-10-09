@@ -1,29 +1,36 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Screen } from '../../components/Screen';
-import { Card, List, Money, Section } from '../../components/ui';
+import { Button, Card, List, Money, Section } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { useData } from '../../hooks/useData';
 import { useNav } from '../../stores/nav';
-import { categoryBudgets, computeSummary } from '../../lib/budget';
+import { computeSummary } from '../../lib/budget';
 import { formatMoney } from '../../lib/money';
 import { formatShortDate, inDaysLabel, periodLabel } from '../../lib/dates';
 import { TxRow } from '../transactions/TxRow';
 import { BackupBanner } from '../settings/BackupBanner';
+import { KeepAtEndSheet } from '../settings/KeepAtEndSheet';
+import { backToRealData } from '../settings/demoActions';
 
-/** Accueil : où j'en suis ce mois-ci, ce qui arrive, et toutes mes opérations du mois. */
+/**
+ * Accueil : combien je peux encore dépenser ce mois-ci, ce qui arrive, mes dernières opérations.
+ * Pas de prévision ni de moyenne par jour : un gros achat compte une fois, pour son montant réel.
+ */
 export function Dashboard() {
-  const { transactions, recurrings, period, today, categories, categoryById } = useData();
+  const { transactions, recurrings, period, today, categoryById, settings } = useData();
   const push = useNav((s) => s.push);
   const setTab = useNav((s) => s.setTab);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [editKeep, setEditKeep] = useState(false);
 
-  const s = useMemo(() => computeSummary(transactions, recurrings, period, today), [transactions, recurrings, period, today]);
-  const alerts = useMemo(() => categoryBudgets(categories, transactions, period).filter((b) => b.level !== 'ok'), [categories, transactions, period]);
+  const keepAtEnd = settings.keepAtEnd ?? 0;
+  const s = useMemo(() => computeSummary(transactions, recurrings, period, today, keepAtEnd), [transactions, recurrings, period, today, keepAtEnd]);
   const recent = useMemo(() => transactions.filter((t) => t.type !== 'transfer' && t.date <= today).slice(0, 6), [transactions, today]);
   const upcoming = s.upcoming.filter((u) => u.type !== 'transfer').slice(0, 3);
   const totalIncome = s.income + s.plannedIncome;
-  const engaged = s.fixedPaid + s.fixedUpcoming + s.variableSpent;
+  const fixedTotal = s.fixedPaid + s.fixedUpcoming;
+  const engaged = fixedTotal + s.variableSpent;
   const rav = s.resteAVivre;
 
   const link = (label: string, onClick: () => void) => (
@@ -37,6 +44,20 @@ export function Dashboard() {
       title={periodLabel(period)}
       subtitle={s.daysLeft > 0 ? `${s.daysLeft} jour${s.daysLeft > 1 ? 's' : ''} restant${s.daysLeft > 1 ? 's' : ''}` : 'Période terminée'}
     >
+      {settings.demoMode && (
+        <Card className="mb-3 flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent" aria-hidden="true">
+            <Icon name="sparkles" size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold">Données exemple</span>
+            <span className="block text-[13px] text-label-2">Tes vraies données sont mises de côté.</span>
+          </span>
+          <Button variant="tinted" className="min-h-10 px-3 text-[15px]" onClick={() => void backToRealData()}>
+            Revenir
+          </Button>
+        </Card>
+      )}
       <BackupBanner />
 
       {/* Reste à vivre */}
@@ -53,12 +74,20 @@ export function Dashboard() {
           {formatMoney(rav)}
         </p>
         <p className="mt-0.5 text-[15px] text-on-ink-2">
-          {s.daysLeft > 0 ? (
+          {rav < 0 ? (
+            keepAtEnd > 0 ? (
+              <>
+                Tu entames les <span className="font-medium text-on-ink tabular">{formatMoney(keepAtEnd)}</span> à garder
+              </>
+            ) : (
+              'Tu as dépensé plus que tes revenus du mois'
+            )
+          ) : keepAtEnd > 0 ? (
             <>
-              <span className="font-medium text-on-ink tabular">{formatMoney(s.dailyAllowance)}</span> par jour jusqu'au {formatShortDate(period.end)}
+              en gardant <span className="font-medium text-on-ink tabular">{formatMoney(keepAtEnd)}</span> pour la fin du mois
             </>
           ) : (
-            'Période terminée'
+            `à dépenser jusqu'au ${formatShortDate(period.end)}`
           )}
         </p>
         <div className="mt-5">
@@ -68,7 +97,7 @@ export function Dashboard() {
             aria-valuenow={Math.round(s.engagedPct)}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="Part des revenus déjà engagée"
+            aria-label="Part du budget du mois déjà utilisée"
           >
             <div
               className={`h-full rounded-full transition-[width] duration-700 ${s.engagedPct >= 100 ? 'bg-[#ff8a80]' : 'bg-white'}`}
@@ -76,31 +105,18 @@ export function Dashboard() {
             />
           </div>
           <div className="mt-2 flex justify-between text-[12px] text-on-ink-2 tabular">
-            <span>{formatMoney(engaged, { compact: true })} engagés</span>
-            <span>sur {formatMoney(totalIncome, { compact: true })} de revenus</span>
+            <span>{formatMoney(engaged, { compact: true })} dépensés ou prévus</span>
+            <span>sur {formatMoney(totalIncome - keepAtEnd, { compact: true })}</span>
           </div>
         </div>
       </button>
 
-      {/* Trois chiffres clés */}
+      {/* D'où vient le reste à vivre : revenus − abonnements et charges − dépenses */}
       <Card className="mt-3 grid grid-cols-3 divide-x divide-separator py-3.5">
-        <Metric label="Dépensé" value={<Money cents={s.totalSpent} compact />} />
-        <Metric label="Aujourd'hui" value={<Money cents={s.todaySpent} compact />} />
-        <Metric label="Fin du mois" value={<Money cents={s.projectedEnd} compact className={s.projectedEnd < 0 ? 'text-negative' : ''} />} hint="prévision" />
+        <Metric label="Revenus" value={<Money cents={totalIncome} compact />} />
+        <Metric label="Abonnements" hint="et charges fixes" value={<Money cents={-fixedTotal} compact />} />
+        <Metric label="Dépenses" value={<Money cents={-s.variableSpent} compact />} />
       </Card>
-
-      {/* Alerte budget, seulement si nécessaire */}
-      {alerts.length > 0 && (
-        <button onClick={() => setTab('stats')} className="pressable mt-3 flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left shadow-card">
-          <span className={`h-2 w-2 shrink-0 rounded-full ${alerts.some((a) => a.level === 'over') ? 'bg-negative' : 'bg-warning'}`} aria-hidden="true" />
-          <span className="min-w-0 flex-1 text-[15px]">
-            {alerts.length === 1
-              ? `${alerts[0].category.name} : ${alerts[0].level === 'over' ? 'budget dépassé' : `${Math.round(alerts[0].pct)} % du budget`}`
-              : `${alerts.length} budgets à surveiller`}
-          </span>
-          <Icon name="chevronRight" size={18} className="text-label-3" />
-        </button>
-      )}
 
       <div className="h-7" />
 
@@ -163,26 +179,35 @@ export function Dashboard() {
         <List className="mb-4">
           <BreakRow label="Revenus reçus" cents={s.income} />
           <BreakRow label="Revenus attendus" cents={s.plannedIncome} />
-          <BreakRow label="Charges fixes payées" cents={-s.fixedPaid} />
-          <BreakRow label="Charges fixes à venir" cents={-s.fixedUpcoming} />
+          <BreakRow label="Abonnements et charges payés" cents={-s.fixedPaid} />
+          <BreakRow label="Abonnements et charges à venir" cents={-s.fixedUpcoming} />
           <BreakRow label="Dépenses courantes" cents={-s.variableSpent} />
+          <button onClick={() => setEditKeep(true)} className="relative flex min-h-12 w-full items-center justify-between gap-3 px-4 text-left active:bg-fill">
+            <span className="text-[15px]">
+              À garder en fin de mois <span className="text-accent">· {keepAtEnd ? 'Modifier' : 'Définir'}</span>
+            </span>
+            <Money cents={-keepAtEnd} sign className="text-[15px]" />
+          </button>
           <BreakRow label="Reste à vivre" cents={s.resteAVivre} bold />
         </List>
         <div className="space-y-2 px-1 text-[14px] leading-relaxed text-label-2">
           <p>
-            Le <strong className="text-label">reste à vivre</strong> est ce qu'il te reste une fois toutes les charges fixes du mois déduites (loyer,
-            abonnements…), y compris celles qui ne sont pas encore prélevées.
+            Le <strong className="text-label">reste à vivre</strong> est ce que tu peux encore dépenser ce mois-ci : tes revenus, moins tes abonnements et
+            charges fixes (même ceux pas encore prélevés), moins ce que tu as déjà dépensé
+            {keepAtEnd ? (
+              <>
+                , moins les <strong className="text-label">{formatMoney(keepAtEnd)}</strong> que tu veux garder
+              </>
+            ) : null}
+            .
           </p>
+          <p>Aucune prévision : un gros achat compte une seule fois, pour son montant réel.</p>
           <p>
-            Réparti sur les <strong className="text-label">{s.daysLeft} jour(s)</strong> restants, cela fait{' '}
-            <strong className="text-label">{formatMoney(s.dailyAllowance)} par jour</strong>.
-          </p>
-          <p>
-            La <strong className="text-label">prévision de fin de mois</strong> prolonge ton rythme actuel de dépenses courantes (
-            {formatMoney(s.variableSpent)} en {s.daysElapsed} j).
+            Pour qu'un abonnement soit déduit dès le début du mois, ouvre l'opération et active <strong className="text-label">« C'est un abonnement »</strong>.
           </p>
         </div>
       </Sheet>
+      <KeepAtEndSheet open={editKeep} onClose={() => setEditKeep(false)} current={keepAtEnd} />
     </Screen>
   );
 }

@@ -34,24 +34,24 @@ Barre du bas : **Accueil · Opérations · + · Analyse · Réglages (⚙)**. To
 
 | | |
 |---|---|
-| **Accueil** | Reste à vivre, budget par jour jusqu'à la fin du mois, part des revenus engagée, dépensé / aujourd'hui / prévision de fin de mois, alerte budget si besoin, échéances à venir, opérations récentes. |
+| **Accueil** | Reste à vivre (somme à garder en fin de mois déjà déduite), part du mois engagée, revenus / abonnements et charges fixes / dépenses, échéances à venir, opérations récentes. Bandeau « Données exemple » avec retour aux vraies données. |
 | **Opérations** (onglet) | Tous les mouvements regroupés par jour, recherche (commerçant, catégorie, montant), filtres (période, type, catégories, montant) et bouton d'import de relevé. |
 | **Ajout (+)** | Dépense ou revenu : pavé numérique intégré, catégorie pré-sélectionnée (la plus fréquente), date, note, option « Répéter ». |
 | **Paiements Apple Pay automatiques** | Une automatisation Raccourcis (déclencheur « Wallet ») envoie chaque paiement Apple Pay à un **relais privé** (Cloudflare Worker, dossier `relay/`). Budget l'ajoute à l'ouverture, catégorie devinée d'après le commerçant (corrections retenues), sans doublon. Guide dans **Réglages → Paiements Apple Pay**. |
 | **Import de relevé bancaire** | Réglages → **Importer un relevé bancaire** : fichier CSV, OFX ou QIF téléchargé depuis l'espace client (Crédit Agricole et autres banques, encodage UTF-8 ou Windows-1252). Libellés nettoyés (« PAIEMENT PAR CARTE X1234 CARREFOUR… » → « Carrefour… »), catégories devinées, **doublons écartés** (même montant à ± 3 jours : récurrences, Apple Pay, saisies manuelles), choix de la date de départ. |
 | **Modifier / supprimer** | Toucher pour modifier, **glisser vers la gauche** pour supprimer (avec annulation). Recherche (commerçant, catégorie, montant) et filtres (période, type, catégories, montant). |
-| **Analyse** | Le mois en chiffres (dépenses, comparaison au mois précédent à la même date, revenus, moyenne par jour, solde), **catégories avec leurs budgets** (toucher une catégorie pour fixer un plafond ; alertes à 80 % et 100 %), rythme de dépenses comparé au mois précédent, 6 derniers mois, revenus par source, plus grosses dépenses. |
+| **Analyse** | Le mois en chiffres (dépenses, comparaison au mois précédent à la même date, revenus, abonnements et charges fixes, solde), **catégories avec leurs budgets** (toucher une catégorie pour fixer un plafond), 6 derniers mois, revenus par source, plus grosses dépenses. |
 | **Simulateur « Et si ? »** | Réduire une catégorie (en € ou en %), résilier des abonnements, gagner plus : économies par mois, par an, sur 2 ou 5 ans. Accessible depuis l'Analyse. |
 | **Revenus et charges fixes** | Salaire, APL, bourse, parents, loyer, abonnements… Hebdo / mensuel / annuel, pause, **sauter une échéance**, total des abonnements par mois et par an. Ajoutés automatiquement le jour J. |
-| **Réglages** | Revenus et charges fixes, catégories (nom, emoji, couleur), Apple Pay, début du mois budgétaire, devise, thème, code PIN + Face ID, notifications, sauvegarde / import / export CSV, données exemple, réinitialisation. |
+| **Réglages** | Revenus et charges fixes, somme à garder en fin de mois, catégories (nom, emoji, couleur), Apple Pay, début du mois budgétaire, devise, thème, code PIN + Face ID, rappel quotidien, sauvegarde / import / export CSV, essai des données exemple (vraies données mises de côté puis restaurées), réinitialisation. |
 | **Confort iOS** | Feuilles à tirer vers le bas, glisser depuis le bord gauche pour revenir, safe areas, mode sombre, retour haptique (iOS 18+), « Réduire les animations » respecté, cibles tactiles ≥ 44 px. |
 
 ## Comment sont faits les calculs
 
 - **Période budgétaire** : du *jour de début* choisi (ex. le 5) à la veille du même jour le mois suivant. Un jour de début à 29/30/31 est borné au dernier jour des mois courts.
-- **Reste à vivre** = revenus reçus + revenus récurrents attendus − **toutes** les charges fixes de la période (payées ou à venir) − dépenses variables.
-- **Budget par jour** = reste à vivre ÷ jours restants (aujourd'hui inclus), jamais négatif.
-- **Prévision de fin de mois** = revenus − charges fixes − (dépenses variables ÷ jours écoulés × jours de la période).
+- **Reste à vivre** = revenus reçus + revenus récurrents attendus − **tous** les abonnements et charges fixes de la période (payés ou à venir) − dépenses variables − **somme à garder en fin de mois**.
+- **Aucune extrapolation** : pas de prévision ni de moyenne par jour, un gros achat ne compte qu'une fois, pour son montant réel.
+- **Abonnements** : une opération marquée « C'est un abonnement » devient la 1re échéance ; les suivantes sont déduites dès le début de chaque mois. Un paiement Apple Pay du même montant (à 3 jours près) remplace l'échéance au lieu de s'y ajouter.
 - **Virements entre comptes** : neutres (ni revenu ni dépense).
 - **Montants** stockés en **centimes entiers** : aucune erreur d'arrondi (0,1 + 0,2 = 0,30 €).
 - **Dates** : chaînes `AAAA-MM-JJ` calculées dans le fuseau **Europe/Paris** (à 0 h 30 on est bien « aujourd'hui », changements d'heure sans décalage).
@@ -110,7 +110,7 @@ src/
 │   ├── money.ts           Saisie « 12,50 » → centimes, formatage fr-FR, partage au centime
 │   ├── dates.ts           Fuseau Europe/Paris, mois 28-31 j, périodes budgétaires
 │   ├── recurrence.ts      Échéances, sauts, génération, équivalents mensuels/annuels
-│   ├── budget.ts          Reste à vivre, prévision, budgets par catégorie, soldes
+│   ├── budget.ts          Reste à vivre, budgets par catégorie, soldes
 │   ├── goals.ts           Progression, versement conseillé, date estimée
 │   ├── stats.ts           Agrégations pour les graphiques
 │   ├── simulator.ts       Scénarios « et si ? »
@@ -153,7 +153,7 @@ Première mise en place :
 
 **Limites dues à iOS / au « sans serveur »**
 
-- **Notifications programmées** : une PWA ne peut pas planifier une notification à l'avance sans serveur de push. Les alertes (budget, abonnements, rappel du soir) partent **quand l'appli est ouverte ou revient au premier plan**. Pour un rappel fiable appli fermée, utiliser l'export **Calendrier (.ics)** proposé dans Réglages et Abonnements.
+- **Notifications programmées** : une PWA ne peut pas planifier une notification à l'avance sans serveur de push. Le rappel du soir part **quand l'appli est ouverte ou revient au premier plan**. Pour un rappel fiable appli fermée, utiliser l'export **Calendrier (.ics)** proposé dans Réglages.
 - **Face ID / Touch ID** : la vérification WebAuthn est faite localement (pas de serveur pour valider la signature). C'est un verrou de confort contre les regards indiscrets, pas une protection contre un accès technique au téléphone.
 - **Retour haptique** : iOS n'expose pas l'API Vibration ; l'appli utilise l'astuce du `<input switch>` qui ne fonctionne qu'à partir d'iOS 18.
 - **Stockage** : iOS peut purger les données d'une PWA peu utilisée → sauvegardes régulières indispensables.

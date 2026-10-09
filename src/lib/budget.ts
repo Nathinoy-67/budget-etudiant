@@ -27,7 +27,12 @@ export interface MonthSummary {
   totalSpent: Cents;
   /** Solde du mois : revenus reçus − dépenses enregistrées. */
   balance: Cents;
-  /** Reste à vivre : revenus (reçus + attendus) − charges fixes (toutes) − dépenses variables. */
+  /** Somme à garder sur le compte en fin de mois (réglage). */
+  keepAtEnd: Cents;
+  /**
+   * Reste à vivre : revenus (reçus + attendus) − charges fixes et abonnements (tous, même pas encore prélevés)
+   * − dépenses courantes − somme à garder. Aucune extrapolation : un gros achat ne compte qu'une fois.
+   */
   resteAVivre: Cents;
   /** Dépenses d'aujourd'hui. */
   todaySpent: Cents;
@@ -36,13 +41,7 @@ export interface MonthSummary {
   daysElapsed: number;
   /** Jours restants, aujourd'hui inclus. */
   daysLeft: number;
-  /** Combien je peux dépenser par jour jusqu'à la fin de la période. */
-  dailyAllowance: Cents;
-  /** Dépenses variables projetées sur toute la période au rythme actuel. */
-  projectedVariable: Cents;
-  /** Solde prévu en fin de période au rythme actuel. */
-  projectedEnd: Cents;
-  /** Part des revenus déjà engagée (charges fixes + dépenses variables), en %. */
+  /** Part de l'enveloppe du mois (revenus − somme à garder) déjà engagée, en %. */
   engagedPct: number;
   upcoming: UpcomingItem[];
 }
@@ -56,6 +55,7 @@ export function computeSummary(
   recurrings: Recurring[],
   period: Period,
   today: ISODate,
+  keepAtEnd: Cents = 0,
 ): MonthSummary {
   let income = 0;
   let fixedPaid = 0;
@@ -99,14 +99,11 @@ export function computeSummary(
 
   const totalIncome = income + plannedIncome;
   const fixedTotal = fixedPaid + fixedUpcoming;
-  const resteAVivre = totalIncome - fixedTotal - variableSpent;
-  const dailyAllowance = daysLeft > 0 ? Math.max(0, Math.floor(resteAVivre / daysLeft)) : 0;
-
-  const projectedVariable =
-    daysElapsed > 0 && daysElapsed < daysTotal ? Math.round((variableSpent / daysElapsed) * daysTotal) : variableSpent;
-  const projectedEnd = totalIncome - fixedTotal - projectedVariable;
+  const keep = Math.max(0, keepAtEnd || 0);
+  const resteAVivre = totalIncome - fixedTotal - variableSpent - keep;
+  const envelope = totalIncome - keep;
   const engaged = fixedTotal + variableSpent;
-  const engagedPct = totalIncome > 0 ? (engaged / totalIncome) * 100 : engaged > 0 ? 100 : 0;
+  const engagedPct = envelope > 0 ? (engaged / envelope) * 100 : engaged > 0 ? 100 : 0;
 
   return {
     period,
@@ -117,14 +114,12 @@ export function computeSummary(
     variableSpent,
     totalSpent: fixedPaid + variableSpent,
     balance: income - (fixedPaid + variableSpent),
+    keepAtEnd: keep,
     resteAVivre,
     todaySpent,
     daysTotal,
     daysElapsed,
     daysLeft,
-    dailyAllowance,
-    projectedVariable,
-    projectedEnd,
     engagedPct,
     upcoming,
   };

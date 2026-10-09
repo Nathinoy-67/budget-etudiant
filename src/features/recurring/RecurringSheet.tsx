@@ -47,7 +47,6 @@ export function RecurringSheet({
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState('');
   const [isSubscription, setIsSubscription] = useState(false);
-  const [remind, setRemind] = useState(2);
   const [emoji, setEmoji] = useState('');
 
   useEffect(() => {
@@ -69,7 +68,6 @@ export function RecurringSheet({
     setStartDate(r?.startDate ?? today);
     setEndDate(r?.endDate ?? '');
     setIsSubscription(r?.isSubscription ?? draft?.isSubscription ?? false);
-    setRemind(r?.remindDaysBefore ?? 2);
     setEmoji(r?.emoji ?? draft?.emoji ?? '');
   }, [open, recurring, draft]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -96,7 +94,7 @@ export function RecurringSheet({
       startDate,
       endDate: endDate || null,
       isSubscription: type === 'expense' && isSubscription,
-      remindDaysBefore: remind,
+      remindDaysBefore: 0,
       emoji: emoji || cat?.emoji || (type === 'transfer' ? '🔁' : undefined),
       active: live?.active ?? true,
     };
@@ -218,20 +216,6 @@ export function RecurringSheet({
             <span className="text-[16px]">C'est un abonnement</span>
             <Toggle checked={isSubscription} onChange={setIsSubscription} label="C'est un abonnement" />
           </div>
-          {isSubscription && (
-            <div className="flex min-h-11 items-center justify-between border-t border-separator pt-2">
-              <label htmlFor="remind" className="text-[16px]">
-                Rappel avant renouvellement
-              </label>
-              <select id="remind" value={remind} onChange={(e) => setRemind(Number(e.target.value))} className="min-h-10 rounded-lg bg-transparent text-right text-[16px] text-accent">
-                {[0, 1, 2, 3, 5, 7, 14].map((n) => (
-                  <option key={n} value={n}>
-                    {n === 0 ? 'Le jour même' : `${n} jour${n > 1 ? 's' : ''} avant`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       )}
 
