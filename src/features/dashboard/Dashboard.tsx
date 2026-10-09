@@ -1,14 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Screen } from '../../components/Screen';
-import { Card, IconButton, List, Money, Section } from '../../components/ui';
+import { Card, List, Money, Section } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { useData } from '../../hooks/useData';
 import { useNav } from '../../stores/nav';
 import { categoryBudgets, computeSummary } from '../../lib/budget';
 import { formatMoney } from '../../lib/money';
-import { formatShortDate, inDaysLabel, inPeriod, periodLabel } from '../../lib/dates';
-import { TxDayList } from '../transactions/TxDayList';
+import { formatShortDate, inDaysLabel, periodLabel } from '../../lib/dates';
+import { TxRow } from '../transactions/TxRow';
 import { BackupBanner } from '../settings/BackupBanner';
 
 /** Accueil : où j'en suis ce mois-ci, ce qui arrive, et toutes mes opérations du mois. */
@@ -20,7 +20,7 @@ export function Dashboard() {
 
   const s = useMemo(() => computeSummary(transactions, recurrings, period, today), [transactions, recurrings, period, today]);
   const alerts = useMemo(() => categoryBudgets(categories, transactions, period).filter((b) => b.level !== 'ok'), [categories, transactions, period]);
-  const monthTx = useMemo(() => transactions.filter((t) => t.type !== 'transfer' && inPeriod(t.date, period)), [transactions, period]);
+  const recent = useMemo(() => transactions.filter((t) => t.type !== 'transfer' && t.date <= today).slice(0, 6), [transactions, today]);
   const upcoming = s.upcoming.filter((u) => u.type !== 'transfer').slice(0, 3);
   const totalIncome = s.income + s.plannedIncome;
   const engaged = s.fixedPaid + s.fixedUpcoming + s.variableSpent;
@@ -36,12 +36,6 @@ export function Dashboard() {
     <Screen
       title={periodLabel(period)}
       subtitle={s.daysLeft > 0 ? `${s.daysLeft} jour${s.daysLeft > 1 ? 's' : ''} restant${s.daysLeft > 1 ? 's' : ''}` : 'Période terminée'}
-      actions={
-        <>
-          <IconButton icon="search" label="Rechercher" className="text-label" onClick={() => push('search')} />
-          <IconButton icon="sliders" label="Réglages" className="text-label" onClick={() => push('settings')} />
-        </>
-      }
     >
       <BackupBanner />
 
@@ -139,14 +133,18 @@ export function Dashboard() {
         </Section>
       )}
 
-      {/* Opérations du mois */}
-      <Section title="Opérations" action={transactions.length > 0 && link('Tout voir', () => push('search'))}>
-        {monthTx.length ? (
-          <TxDayList transactions={monthTx} today={today} />
+      {/* Dernières opérations (la liste complète est dans l'onglet Opérations) */}
+      <Section title="Récent" action={recent.length > 0 && link('Tout voir', () => setTab('operations'))}>
+        {recent.length ? (
+          <List>
+            {recent.map((t) => (
+              <TxRow key={t.id} tx={t} showDate={formatShortDate(t.date, today)} />
+            ))}
+          </List>
         ) : (
           <Card className="px-5 py-6 text-center">
-            <p className="text-[16px] font-semibold">Aucune opération ce mois-ci</p>
-            <p className="mt-1 text-[14px] text-label-2">Touche + pour ajouter une dépense.</p>
+            <p className="text-[16px] font-semibold">Aucune opération</p>
+            <p className="mt-1 text-[14px] text-label-2">Touche + pour ajouter une dépense, ou importe ton relevé depuis l'onglet Opérations.</p>
           </Card>
         )}
       </Section>

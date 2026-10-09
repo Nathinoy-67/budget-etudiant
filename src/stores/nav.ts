@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 
-/** Deux onglets seulement : l'accueil (avec les opérations) et l'analyse. */
-export type TabId = 'home' | 'stats';
+/** Quatre onglets : accueil, opérations, analyse, réglages (le + est au centre de la barre). */
+export type TabId = 'home' | 'operations' | 'stats' | 'settings';
 
-export type RouteName = 'home' | 'stats' | 'search' | 'settings' | 'recurrings' | 'categories' | 'simulator' | 'applepay' | 'import';
+export type RouteName = 'home' | 'operations' | 'stats' | 'settings' | 'search' | 'recurrings' | 'categories' | 'simulator' | 'applepay' | 'import';
 
 export interface Route {
   key: string;
@@ -28,7 +28,9 @@ export const useNav = create<NavState>((set, get) => ({
   tab: 'home',
   stacks: {
     home: [route('home')],
+    operations: [route('operations')],
     stats: [route('stats')],
+    settings: [route('settings')],
   },
   setTab: (tab) => {
     const { tab: current, stacks } = get();

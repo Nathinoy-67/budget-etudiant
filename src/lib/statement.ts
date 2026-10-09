@@ -5,7 +5,8 @@ import { guessCategory, normalizeMerchant, prettyMerchant } from './merchant';
 
 /**
  * Lecture des relevés bancaires exportés depuis l'espace client (Crédit Agricole et autres) :
- * CSV (séparateur ; ou ,), OFX et QIF. Lecture tolérante : on cherche les colonnes par leur nom.
+ * CSV (séparateur ; , ou tabulation), OFX et QIF. Lecture tolérante : on cherche les colonnes
+ * par leur nom, et à défaut on repère les lignes qui contiennent une date et un montant.
  */
 
 export interface StatementRow {
@@ -46,67 +47,141 @@ function check(d: ISODate): ISODate | null {
 
 // ---------- CSV ----------
 
-function splitCsvLine(line: string, sep: string): string[] {
-  const out: string[] = [];
+/**
+ * Découpe tout le texte en enregistrements CSV. Gère les guillemets, les guillemets doublés
+ * et les retours à la ligne À L'INTÉRIEUR d'une cellule (fréquents dans les libellés du Crédit Agricole).
+ */
+export function csvRecords(text: string, sep: string): string[][] {
+  const records: string[][] = [];
+  let row: string[] = [];
   let cur = '';
   let quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (quoted && line[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else quoted = !quoted;
-    } else if (ch === sep && !quoted) {
-      out.push(cur.trim());
+  const endRow = () => {
+    row.push(cur);
+    cur = '';
+    if (row.some((c) => c.trim() !== '')) records.push(row.map((c) => c.replace(/\s+/g, ' ').trim()));
+    row = [];
+  };
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else quoted = false;
+      } else cur += ch === '\r' || ch === '\n' ? ' ' : ch;
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === sep) {
+      row.push(cur);
       cur = '';
-    } else cur += ch;
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      endRow();
+    } else {
+      cur += ch;
+    }
   }
-  out.push(cur.trim());
-  return out;
+  endRow();
+  return records;
+}
+
+/** Séparateur le plus probable : « ; » en priorité (les montants français contiennent des virgules). */
+function detectSeparator(text: string): string {
+  const lines = text.split(/\r?\n|\r/).slice(0, 80);
+  const score = (sep: string) => lines.filter((l) => l.split(sep).length >= 3).length;
+  const semi = score(';');
+  const tab = score('\t');
+  const comma = score(',');
+  if (semi > 0 && semi >= tab && semi >= comma) return ';';
+  if (tab > 0 && tab >= comma) return '\t';
+  return ',';
 }
 
 const norm = (s: string) => normalizeMerchant(s);
+/** Cellule qui ressemble à un montant : chiffres avec 1 ou 2 décimales, symbole € facultatif. */
+const isMoneyCell = (c: string) => /^[-+]?\s*\d[\d\s  .]*[,.]\d{1,2}\s*(€|eur|euros)?$/i.test(c.trim());
+const money = (c: string) => parseAmount(c.replace(/eur(os)?/i, ''));
 
-function parseCsv(text: string): StatementRow[] {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
-  // La ligne d'en-tête est la première qui contient « date » et un libellé ou un montant
-  const headerIndex = lines.findIndex((l) => {
-    const n = norm(l);
-    return /\bdate\b/.test(n) && /(libelle|label|description|operation|montant|debit|credit|amount)/.test(n);
-  });
-  if (headerIndex < 0) return [];
-  const headerLine = lines[headerIndex];
-  const sep = [';', ',', '\t'].sort((a, b) => headerLine.split(b).length - headerLine.split(a).length)[0];
-  const headers = splitCsvLine(headerLine, sep).map(norm);
-
+function parseWithHeader(records: string[][], headerIndex: number): StatementRow[] {
+  const headers = records[headerIndex].map(norm);
   const find = (...patterns: RegExp[]) => headers.findIndex((h) => patterns.some((p) => p.test(h)));
   const iDate = find(/^date( de)? (operation|comptabilisation)$/, /^date$/, /^date/);
-  const iLabel = find(/libelle/, /label/, /description/, /^operation$/, /nature/);
+  const iLabel = find(/libelle/, /label/, /description/, /^operation$/, /nature/, /intitule/);
   const iDebit = find(/debit/);
   const iCredit = find(/credit/);
   const iAmount = find(/^montant/, /amount/);
-  if (iDate < 0 || iLabel < 0 || (iAmount < 0 && iDebit < 0 && iCredit < 0)) return [];
+  if (iDate < 0 || (iAmount < 0 && iDebit < 0 && iCredit < 0)) return [];
 
   const rows: StatementRow[] = [];
-  for (const line of lines.slice(headerIndex + 1)) {
-    const cells = splitCsvLine(line, sep);
+  for (const cells of records.slice(headerIndex + 1)) {
     const date = parseBankDate(cells[iDate] ?? '');
     if (!date) continue;
     let amount: Cents | null = null;
     if (iDebit >= 0 || iCredit >= 0) {
-      const debit = iDebit >= 0 && cells[iDebit] ? parseAmount(cells[iDebit]) : null;
-      const credit = iCredit >= 0 && cells[iCredit] ? parseAmount(cells[iCredit]) : null;
+      const debit = iDebit >= 0 && cells[iDebit] ? money(cells[iDebit]) : null;
+      const credit = iCredit >= 0 && cells[iCredit] ? money(cells[iCredit]) : null;
       if (debit) amount = -Math.abs(debit);
       else if (credit) amount = Math.abs(credit);
     }
-    if (amount == null && iAmount >= 0 && cells[iAmount]) amount = parseAmount(cells[iAmount]);
+    if (amount == null && iAmount >= 0 && cells[iAmount]) amount = money(cells[iAmount]);
     if (!amount) continue;
-    // Libellé parfois réparti sur plusieurs colonnes / lignes (retours à la ligne dans les cellules)
-    const label = (cells[iLabel] ?? '').replace(/\s+/g, ' ').trim();
+    const label =
+      iLabel >= 0 && cells[iLabel]
+        ? cells[iLabel]
+        : (cells.filter((c, j) => j !== iDate && !isMoneyCell(c)).sort((x, y) => y.length - x.length)[0] ?? '');
     rows.push({ date, amount, label });
   }
   return rows;
+}
+
+/**
+ * Sans en-tête reconnu : on garde les lignes qui ont une date et un montant.
+ * Si le fichier a deux colonnes de montants, la première est le débit et la seconde le crédit.
+ */
+function parseWithoutHeader(records: string[][]): StatementRow[] {
+  const candidates: { cells: string[]; iDate: number; amounts: number[] }[] = [];
+  for (const cells of records) {
+    const iDate = cells.findIndex((c) => parseBankDate(c) != null);
+    if (iDate < 0) continue;
+    const amounts = cells.map((c, j) => (j !== iDate && isMoneyCell(c) ? j : -1)).filter((j) => j >= 0);
+    if (amounts.length) candidates.push({ cells, iDate, amounts });
+  }
+  const columns = [...new Set(candidates.flatMap((c) => c.amounts))].sort((a, b) => a - b);
+  const debitCreditColumns = columns.length === 2;
+  const rows: StatementRow[] = [];
+  for (const { cells, iDate, amounts } of candidates) {
+    const j = amounts[0];
+    const raw = money(cells[j]);
+    if (!raw) continue;
+    const amount = cells[j].trim().startsWith('-') ? -Math.abs(raw) : debitCreditColumns ? (j === columns[0] ? -Math.abs(raw) : Math.abs(raw)) : raw;
+    const label = cells.filter((_, k) => k !== iDate && !amounts.includes(k)).sort((x, y) => y.length - x.length)[0] ?? '';
+    rows.push({ date: parseBankDate(cells[iDate])!, amount, label });
+  }
+  return rows;
+}
+
+function parseCsv(text: string): StatementRow[] {
+  const records = csvRecords(text, detectSeparator(text));
+  // L'en-tête est le premier enregistrement qui contient « date » et un libellé ou un montant
+  const headerIndex = records.findIndex((cells) => {
+    const n = norm(cells.join(' '));
+    return cells.length >= 3 && /\bdate\b/.test(n) && /(libelle|label|description|operation|montant|debit|credit|amount)/.test(n);
+  });
+  const withHeader = headerIndex >= 0 ? parseWithHeader(records, headerIndex) : [];
+  return withHeader.length ? withHeader : parseWithoutHeader(records);
+}
+
+/** Premières lignes du fichier, longs numéros masqués (pour aider au diagnostic sans exposer de données). */
+export function statementPreview(text: string, lines = 8): string {
+  return text
+    .replace(/^﻿/, '')
+    .split(/\r?\n|\r/)
+    .filter((l) => l.trim() !== '')
+    .slice(0, lines)
+    .map((l) => l.replace(/\d{5,}/g, '•••••').slice(0, 120))
+    .join('\n');
 }
 
 // ---------- OFX ----------
@@ -168,8 +243,11 @@ export function parseStatement(text: string, filename = ''): ParsedStatement | n
   return rows.length || ext === 'csv' ? { format: 'csv', rows } : null;
 }
 
-/** Décode un fichier en UTF-8, ou en Windows-1252 (encodage fréquent des exports bancaires). */
+/** Décode un fichier : UTF-16 (avec BOM), UTF-8, ou Windows-1252 (encodage fréquent des exports bancaires). */
 export function decodeStatement(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer.slice(0, 2));
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(buffer);
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(buffer);
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
   } catch {
@@ -208,7 +286,6 @@ export function cleanBankLabel(label: string): string {
   for (const p of prefixes) s = s.replace(p, ' ');
   s = s
     .replace(/\bX\d{4}\b/gi, ' ') // numéro de carte masqué
-    .replace(/\b\d{2}[/.]\d{2}([/.]\d{2,4})?\b/g, ' ') // dates
     .replace(/\b(REF|ID|MDT|RUM|ICS|NPY|LIB)[: ]\S*/gi, ' ') // références SEPA
     .replace(/\b\d{6,}\b/g, ' ') // longues références numériques
     .replace(/\s+/g, ' ')
@@ -286,4 +363,3 @@ export function buildCandidates(
     })
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
-

@@ -82,7 +82,7 @@ export function SettingsScreen() {
   const standalone = isStandalone();
 
   return (
-    <Screen title="Réglages" back>
+    <Screen title="Réglages">
       <Section title="Mon budget" footer="Début du mois : si tes revenus tombent le 5, choisis le 5 (le mois ira du 5 au 4).">
         <List>
           <Row icon="upload" title="Importer un relevé bancaire" subtitle="Récupère tes opérations d'un coup (CSV, OFX)" chevron onClick={() => push('import')} />

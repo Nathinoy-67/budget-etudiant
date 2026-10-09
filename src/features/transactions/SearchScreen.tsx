@@ -4,6 +4,7 @@ import { Button, EmptyState, Field, IconButton, Segmented, TextInput } from '../
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { useData } from '../../hooks/useData';
+import { useNav } from '../../stores/nav';
 import { shiftPeriod, type Period } from '../../lib/dates';
 import { formatMoney, parseAmount } from '../../lib/money';
 import { TxDayList } from './TxDayList';
@@ -27,7 +28,8 @@ const normalize = (s: string) =>
 const PAGE = 150;
 
 /** Recherche et filtres sur toutes les opérations. */
-export function SearchScreen({ params }: { params?: Record<string, string> }) {
+export function SearchScreen({ params, root }: { params?: Record<string, string>; root?: boolean }) {
+  const push = useNav((s) => s.push);
   const { transactions, categories, period, today, settings, categoryById } = useData();
   const [query, setQuery] = useState('');
   const [preset, setPreset] = useState<PeriodPreset>((params?.preset as PeriodPreset) ?? 'all');
@@ -71,10 +73,11 @@ export function SearchScreen({ params }: { params?: Record<string, string> }) {
 
   return (
     <Screen
-      title="Rechercher"
-      back
+      title={root ? 'Opérations' : 'Rechercher'}
+      back={!root}
       actions={
-        <span className="relative">
+        <span className="relative flex items-center">
+          {root && <IconButton icon="upload" label="Importer un relevé" onClick={() => push('import')} />}
           <IconButton icon="filter" label="Filtres" onClick={() => setShowFilters(true)} />
           {filterCount > 0 && (
             <span className="pointer-events-none absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">

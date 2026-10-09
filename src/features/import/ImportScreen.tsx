@@ -7,7 +7,7 @@ import { useNav } from '../../stores/nav';
 import { toast } from '../../stores/ui';
 import { haptic } from '../../lib/haptics';
 import { formatShortDate } from '../../lib/dates';
-import { buildCandidates, decodeStatement, parseStatement, type ImportCandidate } from '../../lib/statement';
+import { buildCandidates, decodeStatement, parseStatement, statementPreview, type ImportCandidate } from '../../lib/statement';
 import { addTransaction } from '../../db/actions';
 
 /** Import d'un relevé bancaire (CSV, OFX, QIF) téléchargé depuis l'espace client de la banque. */
@@ -18,19 +18,22 @@ export function ImportScreen() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [from, setFrom] = useState(period.start);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
 
   const onFile = async (file: File) => {
     setError(null);
+    setPreview(null);
     setFileName(file.name);
     try {
       const text = decodeStatement(await file.arrayBuffer());
       const parsed = parseStatement(text, file.name);
       if (!parsed || parsed.rows.length === 0) {
         setCandidates(null);
-        setError("Aucune opération trouvée dans ce fichier. Vérifie qu'il s'agit bien d'un export d'opérations (CSV, OFX ou QIF), pas d'un relevé PDF.");
+        setPreview(statementPreview(text));
+        setError("Aucune opération reconnue dans ce fichier. Fais une capture de l'aperçu ci-dessous (les numéros de compte sont masqués) pour qu'on adapte la lecture à ton format.");
         return;
       }
       const c = buildCandidates(parsed.rows, transactions, categories, settings.merchantRules ?? {});
@@ -121,6 +124,12 @@ export function ImportScreen() {
               <p className="mt-3 rounded-xl bg-negative-soft px-3.5 py-2.5 text-[14px] text-negative" role="alert">
                 {error}
               </p>
+            )}
+            {preview && (
+              <div className="mt-3 rounded-xl bg-card p-3 shadow-card">
+                <p className="mb-1.5 text-[12px] font-medium text-label-2">Début du fichier « {fileName} »</p>
+                <pre className="overflow-x-auto text-[11px] leading-snug whitespace-pre-wrap text-label">{preview}</pre>
+              </div>
             )}
           </Section>
 

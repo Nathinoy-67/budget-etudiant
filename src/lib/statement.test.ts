@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Category, Transaction } from '../types';
-import { buildCandidates, cleanBankLabel, decodeStatement, findDuplicates, parseBankDate, parseStatement } from './statement';
+import { buildCandidates, cleanBankLabel, decodeStatement, findDuplicates, parseBankDate, parseStatement, statementPreview } from './statement';
 
 const cat = (id: string, name: string, kind: 'expense' | 'income' = 'expense', incomeSource?: Category['incomeSource']): Category => ({
   id,
@@ -174,5 +174,62 @@ describe('préparation de l’import', () => {
     expect(c.map((x) => x.type)).toEqual(['expense', 'expense', 'income', 'expense']);
     expect(c.map((x) => x.duplicate)).toEqual([false, false, false, true]);
     expect(c[0].note).toBe('Carrefour City Paris');
+  });
+});
+
+describe('CSV : cas réels difficiles', () => {
+  it('libellés sur plusieurs lignes à l’intérieur des guillemets (export Crédit Agricole)', () => {
+    const csv = [
+      'Téléchargement du 09/10/2026;',
+      '',
+      'NOM PRENOM;',
+      'Compte de Dépôt carte n° 12345678901;',
+      'Solde au 09/10/2026 312,45 €',
+      '',
+      'Liste des opérations du compte entre le 01/10/2026 et le 09/10/2026;',
+      '',
+      'Date;Libellé;Débit euros;Crédit euros;',
+      '08/10/2026;"PAIEMENT PAR CARTE    ',
+      ' X1234 CARREFOUR CITY 07/10    ',
+      '";23,40;;',
+      '05/10/2026;"VIR SEPA RECU    ',
+      ' /DE CAF DE PARIS    ',
+      ' /MOTIF APL    ',
+      '";;195,50;',
+    ].join('\r\n');
+    expect(parseStatement(csv, 'CA20261009.csv')!.rows).toEqual([
+      { date: '2026-10-08', amount: -2340, label: 'PAIEMENT PAR CARTE X1234 CARREFOUR CITY 07/10' },
+      { date: '2026-10-05', amount: 19550, label: 'VIR SEPA RECU /DE CAF DE PARIS /MOTIF APL' },
+    ]);
+  });
+  it('deux colonnes de date (opération / valeur)', () => {
+    const csv = 'Date opération;Date valeur;Libellé;Débit;Crédit\n08/10/2026;09/10/2026;CARTE KFC;9,80;\n';
+    expect(parseStatement(csv)!.rows).toEqual([{ date: '2026-10-08', amount: -980, label: 'CARTE KFC' }]);
+  });
+  it('sans en-tête reconnu : date + colonnes débit / crédit', () => {
+    const csv = ['Mon compte;;;', '08/10/2026;CARTE LIDL;12,30;', '05/10/2026;VIR CAF;;195,50', '04/10/2026;CARTE SNCF;15,00;'].join('\n');
+    expect(parseStatement(csv, 'x.csv')!.rows).toEqual([
+      { date: '2026-10-08', amount: -1230, label: 'CARTE LIDL' },
+      { date: '2026-10-05', amount: 19550, label: 'VIR CAF' },
+      { date: '2026-10-04', amount: -1500, label: 'CARTE SNCF' },
+    ]);
+  });
+  it('sans en-tête : montant unique signé', () => {
+    const csv = '08/10/2026;CARTE LIDL;-12,30\n05/10/2026;VIR CAF;195,50\n';
+    expect(parseStatement(csv, 'x.csv')!.rows.map((r) => r.amount)).toEqual([-1230, 19550]);
+  });
+  it('fichier en UTF-16 (avec BOM)', () => {
+    const text = 'Date;Libellé;Débit;Crédit\n08/10/2026;CARTE LIDL;12,30;\n';
+    const buf = new Uint8Array(2 + text.length * 2);
+    buf[0] = 0xff;
+    buf[1] = 0xfe;
+    for (let i = 0; i < text.length; i++) {
+      buf[2 + i * 2] = text.charCodeAt(i) & 0xff;
+      buf[3 + i * 2] = text.charCodeAt(i) >> 8;
+    }
+    expect(parseStatement(decodeStatement(buf.buffer), 'x.csv')!.rows).toHaveLength(1);
+  });
+  it('aperçu de diagnostic : numéros masqués', () => {
+    expect(statementPreview('Compte n° 12345678901;\nDate;Libellé\n')).toBe('Compte n° •••••;\nDate;Libellé');
   });
 });

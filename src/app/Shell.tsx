@@ -16,8 +16,12 @@ import { ImportScreen } from '../features/import/ImportScreen';
 const StatsScreen = lazy(() => import('../features/stats/StatsScreen'));
 const SimulatorScreen = lazy(() => import('../features/simulator/SimulatorScreen'));
 
+/** Onglet Opérations : la liste complète, avec recherche et filtres. */
+const OperationsTab = () => <SearchScreen root />;
+
 const SCREENS: Record<RouteName, ComponentType<{ params?: Record<string, string> }>> = {
   home: Dashboard,
+  operations: OperationsTab,
   stats: StatsScreen,
   search: SearchScreen,
   settings: SettingsScreen,
@@ -97,7 +101,7 @@ export function Shell() {
   return (
     <div className="fixed inset-0 bg-bg">
       <main className="absolute inset-0">
-        {(['home', 'stats'] as TabId[]).map((t) =>
+        {(['home', 'operations', 'stats', 'settings'] as TabId[]).map((t) =>
           visited.has(t) ? <TabStack key={t} tab={t} active={t === tab} /> : null,
         )}
       </main>

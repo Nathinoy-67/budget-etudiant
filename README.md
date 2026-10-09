@@ -30,15 +30,16 @@ Application de gestion de budget pour étudiant, pensée pour l'iPhone : **PWA i
 
 ## Fonctionnalités
 
-L'appli tient en **deux onglets et un bouton** : *Accueil*, *+* et *Analyse*. Tout passe par un seul compte : le compte courant.
+Barre du bas : **Accueil · Opérations · + · Analyse · Réglages (⚙)**. Tout passe par un seul compte : le compte courant.
 
 | | |
 |---|---|
-| **Accueil** | Reste à vivre, budget par jour jusqu'à la fin du mois, part des revenus engagée, dépensé / aujourd'hui / prévision de fin de mois, alerte budget si besoin, échéances à venir, puis **toutes les opérations du mois** regroupées par jour. En haut : 🔍 recherche et ⚙︎ réglages. |
+| **Accueil** | Reste à vivre, budget par jour jusqu'à la fin du mois, part des revenus engagée, dépensé / aujourd'hui / prévision de fin de mois, alerte budget si besoin, échéances à venir, opérations récentes. |
+| **Opérations** (onglet) | Tous les mouvements regroupés par jour, recherche (commerçant, catégorie, montant), filtres (période, type, catégories, montant) et bouton d'import de relevé. |
 | **Ajout (+)** | Dépense ou revenu : pavé numérique intégré, catégorie pré-sélectionnée (la plus fréquente), date, note, option « Répéter ». |
 | **Paiements Apple Pay automatiques** | Une automatisation Raccourcis (déclencheur « Wallet ») envoie chaque paiement Apple Pay à un **relais privé** (Cloudflare Worker, dossier `relay/`). Budget l'ajoute à l'ouverture, catégorie devinée d'après le commerçant (corrections retenues), sans doublon. Guide dans **Réglages → Paiements Apple Pay**. |
 | **Import de relevé bancaire** | Réglages → **Importer un relevé bancaire** : fichier CSV, OFX ou QIF téléchargé depuis l'espace client (Crédit Agricole et autres banques, encodage UTF-8 ou Windows-1252). Libellés nettoyés (« PAIEMENT PAR CARTE X1234 CARREFOUR… » → « Carrefour… »), catégories devinées, **doublons écartés** (même montant à ± 3 jours : récurrences, Apple Pay, saisies manuelles), choix de la date de départ. |
-| **Opérations** | Toucher pour modifier, **glisser vers la gauche** pour supprimer (avec annulation). Recherche (commerçant, catégorie, montant) et filtres (période, type, catégories, montant). |
+| **Modifier / supprimer** | Toucher pour modifier, **glisser vers la gauche** pour supprimer (avec annulation). Recherche (commerçant, catégorie, montant) et filtres (période, type, catégories, montant). |
 | **Analyse** | Le mois en chiffres (dépenses, comparaison au mois précédent à la même date, revenus, moyenne par jour, solde), **catégories avec leurs budgets** (toucher une catégorie pour fixer un plafond ; alertes à 80 % et 100 %), rythme de dépenses comparé au mois précédent, 6 derniers mois, revenus par source, plus grosses dépenses. |
 | **Simulateur « Et si ? »** | Réduire une catégorie (en € ou en %), résilier des abonnements, gagner plus : économies par mois, par an, sur 2 ou 5 ans. Accessible depuis l'Analyse. |
 | **Revenus et charges fixes** | Salaire, APL, bourse, parents, loyer, abonnements… Hebdo / mensuel / annuel, pause, **sauter une échéance**, total des abonnements par mois et par an. Ajoutés automatiquement le jour J. |

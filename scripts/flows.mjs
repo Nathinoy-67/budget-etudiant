@@ -16,8 +16,7 @@ const tab = async (label) => {
   await page.getByRole('navigation').getByRole('button', { name: label }).click(); // re-taper = retour à la racine
 };
 const settings = async (row) => {
-  await tab('Accueil');
-  await page.getByRole('button', { name: 'Réglages' }).click();
+  await tab('Réglages');
   if (row) await page.getByRole('button', { name: new RegExp(row) }).first().click();
 };
 const back = () => page.getByRole('button', { name: 'Retour' }).last().click();
@@ -47,9 +46,9 @@ step(`démo chargée (${initial} opérations)`);
 
 // --- Accueil : pas d'ajout rapide, opérations du mois présentes ---
 assert.equal(await page.getByText('Ajout rapide').count(), 0, "plus d'ajout rapide");
-assert.equal(await page.getByRole('navigation').getByRole('button').count(), 3, '2 onglets + bouton +');
+assert.equal(await page.getByRole('navigation').getByRole('button').count(), 5, '4 onglets + bouton +');
 assert.ok((await page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).count()) > 0, "opérations sur l'accueil");
-step('accueil simplifié (2 onglets, opérations du mois)');
+step('accueil : 4 onglets dont Opérations et Réglages, opérations récentes');
 
 // --- Ajout d'une dépense (sans choix de compte ni virement) ---
 await page.getByRole('button', { name: 'Ajouter une opération' }).click();
@@ -62,7 +61,7 @@ assert.equal(await countTx(), initial + 1);
 step('dépense ajoutée en 3 gestes');
 
 // --- Recherche + édition ---
-await page.getByRole('button', { name: 'Rechercher' }).click();
+await tab('Opérations');
 await page.getByRole('radio', { name: 'Tout', exact: true }).click();
 await page.getByLabel('Rechercher une opération').fill('kebab');
 const rows = page.getByRole('button', { name: /Kebab, dépense/ });
@@ -104,7 +103,9 @@ await page.getByRole('button', { name: 'OK' }).click();
 assert.equal(await page.getByRole('button', { name: /dépense\. Toucher/ }).locator('visible=true').count(), 0, 'filtre revenus');
 step('filtre par type');
 
-// --- Glisser depuis le bord pour revenir ---
+// --- Glisser depuis le bord pour revenir (depuis un écran ouvert dans les Réglages) ---
+await settings('Revenus et charges fixes');
+await page.getByText('Charges fixes').first().waitFor();
 await page.locator('div.touch-none.w-4').last().evaluate(async (el) => {
   const r = el.getBoundingClientRect();
   const o = (x) => ({ bubbles: true, cancelable: true, pointerId: 2, pointerType: 'touch', isPrimary: true, clientX: x, clientY: r.y + 200, button: 0, buttons: 1 });
@@ -115,7 +116,7 @@ await page.locator('div.touch-none.w-4').last().evaluate(async (el) => {
   }
   window.dispatchEvent(new PointerEvent('pointerup', { ...o(245), buttons: 0 }));
 });
-await page.getByLabel('Rechercher une opération').waitFor({ state: 'detached' });
+await page.getByRole('heading', { name: 'Revenus et charges' }).waitFor({ state: 'detached' });
 step('glisser depuis le bord pour revenir');
 
 // --- Budget depuis l'Analyse ---
