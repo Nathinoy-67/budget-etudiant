@@ -37,6 +37,7 @@ L'appli tient en **deux onglets et un bouton** : *Accueil*, *+* et *Analyse*. To
 | **Accueil** | Reste à vivre, budget par jour jusqu'à la fin du mois, part des revenus engagée, dépensé / aujourd'hui / prévision de fin de mois, alerte budget si besoin, échéances à venir, puis **toutes les opérations du mois** regroupées par jour. En haut : 🔍 recherche et ⚙︎ réglages. |
 | **Ajout (+)** | Dépense ou revenu : pavé numérique intégré, catégorie pré-sélectionnée (la plus fréquente), date, note, option « Répéter ». |
 | **Paiements Apple Pay automatiques** | Une automatisation Raccourcis (déclencheur « Wallet ») envoie chaque paiement Apple Pay à un **relais privé** (Cloudflare Worker, dossier `relay/`). Budget l'ajoute à l'ouverture, catégorie devinée d'après le commerçant (corrections retenues), sans doublon. Guide dans **Réglages → Paiements Apple Pay**. |
+| **Import de relevé bancaire** | Réglages → **Importer un relevé bancaire** : fichier CSV, OFX ou QIF téléchargé depuis l'espace client (Crédit Agricole et autres banques, encodage UTF-8 ou Windows-1252). Libellés nettoyés (« PAIEMENT PAR CARTE X1234 CARREFOUR… » → « Carrefour… »), catégories devinées, **doublons écartés** (même montant à ± 3 jours : récurrences, Apple Pay, saisies manuelles), choix de la date de départ. |
 | **Opérations** | Toucher pour modifier, **glisser vers la gauche** pour supprimer (avec annulation). Recherche (commerçant, catégorie, montant) et filtres (période, type, catégories, montant). |
 | **Analyse** | Le mois en chiffres (dépenses, comparaison au mois précédent à la même date, revenus, moyenne par jour, solde), **catégories avec leurs budgets** (toucher une catégorie pour fixer un plafond ; alertes à 80 % et 100 %), rythme de dépenses comparé au mois précédent, 6 derniers mois, revenus par source, plus grosses dépenses. |
 | **Simulateur « Et si ? »** | Réduire une catégorie (en € ou en %), résilier des abonnements, gagner plus : économies par mois, par an, sur 2 ou 5 ans. Accessible depuis l'Analyse. |
@@ -93,6 +94,7 @@ node scripts/screens.mjs <dossier>   # captures des écrans principaux (serveur 
 node scripts/flows.mjs        # scénarios avec assertions : saisie, recherche, glisser-supprimer, budgets,
                               # simulateur, sauter une échéance, export/import, code PIN
 node scripts/pwa-check.mjs <url> chromium   # manifest, icônes, meta iOS, service worker, hors ligne
+node scripts/import-check.mjs               # import d'un relevé (aperçu, doublons, réimport)
 node scripts/applepay-check.mjs             # réception des paiements Apple Pay (appli installée et Safari)
 ```
 
@@ -111,6 +113,7 @@ src/
 │   ├── goals.ts           Progression, versement conseillé, date estimée
 │   ├── stats.ts           Agrégations pour les graphiques
 │   ├── simulator.ts       Scénarios « et si ? »
+│   ├── statement.ts       Relevés bancaires CSV / OFX / QIF, nettoyage des libellés, doublons
 │   ├── merchant.ts        Paiements Apple Pay : lecture du lien, commerçant → catégorie
 │   ├── csv.ts, backup.ts, ics.ts, files.ts      Export / import / calendrier
 │   └── security.ts, notifications.ts, haptics.ts

@@ -1,7 +1,7 @@
 {
   "name": "budget-etudiant",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,8 @@
     "test:pwa": "node scripts/pwa-check.mjs",
     "test:applepay": "node scripts/applepay-check.mjs",
     "test:relay": "node scripts/relay-check.mjs",
-    "screens": "node scripts/screens.mjs"
+    "screens": "node scripts/screens.mjs",
+    "test:import": "node scripts/import-check.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.6",

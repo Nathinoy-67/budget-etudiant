@@ -96,7 +96,7 @@ export function TransactionSheet() {
       if (editing) {
         await updateTransaction(editing.id, payload);
         // Correction de catégorie d'un paiement Apple Pay : on retient le choix pour ce commerçant
-        if (editing.source === 'applepay' && editing.merchant && payload.categoryId !== editing.categoryId)
+        if ((editing.source === 'applepay' || editing.source === 'import') && editing.merchant && payload.categoryId !== editing.categoryId)
           void learnMerchantCategory(data, editing.merchant, payload.categoryId);
         haptic('success');
         toast('Opération modifiée', { tone: 'success' });

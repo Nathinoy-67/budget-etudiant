@@ -10,6 +10,7 @@ import { RecurringsScreen } from '../features/recurring/RecurringsScreen';
 import { CategoriesScreen } from '../features/categories/CategoriesScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { ApplePayScreen } from '../features/applepay/ApplePayScreen';
+import { ImportScreen } from '../features/import/ImportScreen';
 
 // Écrans lourds (Recharts) chargés à la demande
 const StatsScreen = lazy(() => import('../features/stats/StatsScreen'));
@@ -24,6 +25,7 @@ const SCREENS: Record<RouteName, ComponentType<{ params?: Record<string, string>
   categories: CategoriesScreen,
   simulator: SimulatorScreen,
   applepay: ApplePayScreen,
+  import: ImportScreen,
 };
 
 function Loading() {

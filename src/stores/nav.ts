@@ -3,7 +3,7 @@ import { create } from 'zustand';
 /** Deux onglets seulement : l'accueil (avec les opérations) et l'analyse. */
 export type TabId = 'home' | 'stats';
 
-export type RouteName = 'home' | 'stats' | 'search' | 'settings' | 'recurrings' | 'categories' | 'simulator' | 'applepay';
+export type RouteName = 'home' | 'stats' | 'search' | 'settings' | 'recurrings' | 'categories' | 'simulator' | 'applepay' | 'import';
 
 export interface Route {
   key: string;

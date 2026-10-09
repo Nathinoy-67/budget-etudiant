@@ -52,8 +52,8 @@ export interface Transaction {
   /** Opération récurrente d'origine, et date d'échéance correspondante. */
   recurringId?: ID | null;
   occurrence?: ISODate | null;
-  /** Origine automatique (paiement Apple Pay reçu via le raccourci iOS). */
-  source?: 'applepay' | null;
+  /** Origine automatique : paiement Apple Pay (raccourci iOS) ou import d'un relevé bancaire. */
+  source?: 'applepay' | 'import' | null;
   /** Nom brut du commerçant transmis par l'iPhone. */
   merchant?: string | null;
   createdAt: number;

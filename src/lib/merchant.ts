@@ -25,6 +25,7 @@ export function prettyMerchant(name: string): string {
 
 /** Mots-clés → nom de catégorie par défaut. Comparaison sur des mots entiers. */
 const KEYWORDS: Record<string, string[]> = {
+  Loyer: ['loyer', 'sci', 'foncia', 'nexity', 'century 21', 'orpi', 'agence immobiliere', 'studefi', 'studea', 'les estudines'],
   Courses: [
     'carrefour', 'leclerc', 'lidl', 'aldi', 'auchan', 'intermarche', 'monoprix', 'monop', 'franprix', 'casino', 'super u',
     'hyper u', 'u express', 'systeme u', 'picard', 'biocoop', 'netto', 'spar', 'naturalia', 'g20', 'coccinelle', 'cora',
