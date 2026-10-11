@@ -62,9 +62,11 @@ assert.equal(await page.getByText('Ajout rapide').count(), 0, "plus d'ajout rapi
 assert.equal(await page.getByRole('navigation').getByRole('button').count(), 5, '4 onglets + bouton +');
 assert.ok((await page.getByRole('button', { name: /dépense\. Toucher pour modifier/ }).count()) > 0, "opérations sur l'accueil");
 assert.equal(await page.getByText('Fin du mois', { exact: true }).count(), 0, 'plus de prévision de fin de mois');
-assert.ok(await page.getByText('Maximum par jour', { exact: true }).isVisible(), 'compteur maximum par jour');
+assert.equal(await page.getByText('Maximum par jour', { exact: true }).count(), 0, 'plus de carte maximum par jour');
+assert.ok(await page.getByText('Par jour', { exact: true }).isVisible(), 'moyenne par jour à la place des abonnements');
+assert.equal(await page.getByText('et charges fixes', { exact: true }).count(), 0, "plus d'abonnements sur l'accueil");
 assert.ok(await page.getByText('Données exemple', { exact: true }).isVisible(), 'bandeau données exemple');
-step('accueil : 4 onglets, opérations récentes, maximum par jour, pas de prévision');
+step('accueil : 4 onglets, opérations récentes, par jour, pas de prévision');
 
 // --- Somme à garder en fin de mois ---
 const ravBefore = await resteAVivre();

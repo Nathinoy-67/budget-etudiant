@@ -14,7 +14,7 @@ import { KeepAtEndSheet } from '../settings/KeepAtEndSheet';
 import { backToRealData } from '../settings/demoActions';
 
 /**
- * Accueil : combien je peux encore dépenser ce mois-ci (et au maximum par jour), ce qui arrive,
+ * Accueil : combien je peux encore dépenser ce mois-ci (et en moyenne par jour), ce qui arrive,
  * mes dernières opérations. Pas de prévision : un gros achat compte une fois, pour son montant réel.
  */
 export function Dashboard() {
@@ -111,40 +111,10 @@ export function Dashboard() {
         </div>
       </button>
 
-      {/* Maximum par jour pour finir le mois avec au moins la somme à garder */}
-      {s.daysLeft > 0 && (
-        <Card className="mt-3 flex items-center gap-3 p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent" aria-hidden="true">
-            <Icon name="calendar" size={20} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold">Maximum par jour</span>
-            <span className="block text-[13px] text-label-2">
-              {s.dailyMax <= 0 ? (
-                keepAtEnd > 0 ? (
-                  `Plus rien à dépenser pour garder ${formatMoney(keepAtEnd)}`
-                ) : (
-                  'Plus rien à dépenser ce mois-ci'
-                )
-              ) : s.todayLeft >= 0 ? (
-                <>
-                  Encore <span className="font-medium text-positive tabular">{formatMoney(s.todayLeft)}</span> aujourd'hui
-                </>
-              ) : (
-                <>
-                  Dépassé de <span className="font-medium text-negative tabular">{formatMoney(-s.todayLeft)}</span> aujourd'hui
-                </>
-              )}
-            </span>
-          </span>
-          <Money cents={s.dailyMax} className={`text-[22px] font-semibold tracking-[-0.02em] ${s.dailyMax > 0 ? 'text-positive' : 'text-negative'}`} />
-        </Card>
-      )}
-
-      {/* D'où vient le reste à vivre : revenus − abonnements et charges − dépenses */}
+      {/* Revenus, moyenne possible par jour jusqu'à la fin du mois, dépenses */}
       <Card className="mt-3 grid grid-cols-3 divide-x divide-separator py-3.5">
         <Metric label="Revenus" value={<Money cents={totalIncome} compact className="text-positive" />} />
-        <Metric label="Abonnements" hint="et charges fixes" value={<Money cents={-fixedTotal} compact className={fixedTotal ? 'text-negative' : ''} />} />
+        <Metric label="Par jour" hint={`jusqu'au ${formatShortDate(period.end)}`} value={<Money cents={s.dailyMax} compact className={s.dailyMax > 0 ? 'text-positive' : 'text-negative'} />} />
         <Metric label="Dépenses" value={<Money cents={-s.variableSpent} compact className={s.variableSpent ? 'text-negative' : ''} />} />
       </Card>
 
@@ -223,7 +193,7 @@ export function Dashboard() {
         {s.daysLeft > 0 && (
           <List className="mb-4">
             <div className="relative flex min-h-12 items-center justify-between gap-3 px-4 font-semibold">
-              <span className="text-[15px]">Maximum par jour ({s.daysLeft} jour{s.daysLeft > 1 ? 's' : ''})</span>
+              <span className="text-[15px]">Par jour jusqu'à la fin du mois ({s.daysLeft} jour{s.daysLeft > 1 ? 's' : ''})</span>
               <Money cents={s.dailyMax} className="text-[15px]" />
             </div>
           </List>
@@ -241,7 +211,7 @@ export function Dashboard() {
           </p>
           <p>Aucune prévision : un gros achat compte une seule fois, pour son montant réel.</p>
           <p>
-            Le <strong className="text-label">maximum par jour</strong>, c'est le reste à vivre partagé entre les jours qui restent, aujourd'hui compris. Si tu
+            Le montant <strong className="text-label">par jour</strong>, c'est le reste à vivre partagé entre les jours qui restent, aujourd'hui compris. Si tu
             le respectes, tu finis le mois avec {keepAtEnd ? <>au moins {formatMoney(keepAtEnd)}</> : 'un compte qui ne passe pas dans le rouge'}. Il ne
             bouge pas dans la journée et se recalcule chaque matin : si tu dépenses moins un jour, il augmente ; si tu dépenses plus, il baisse.
           </p>

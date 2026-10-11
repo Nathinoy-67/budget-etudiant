@@ -37,13 +37,11 @@ export interface MonthSummary {
   /** Dépenses d'aujourd'hui. */
   todaySpent: Cents;
   /**
-   * Maximum à dépenser par jour, aujourd'hui inclus, pour finir le mois avec au moins la somme à garder :
+   * Moyenne à dépenser par jour jusqu'à la fin du mois, aujourd'hui inclus, pour finir le mois avec au moins la somme à garder :
    * reste à vivre (avant les dépenses courantes d'aujourd'hui) ÷ jours restants. 0 si plus rien à dépenser.
    * Il ne bouge pas pendant la journée ; il se recalcule chaque matin d'après ce qui a vraiment été dépensé.
    */
   dailyMax: Cents;
-  /** Ce qu'il reste à dépenser aujourd'hui (dailyMax − dépenses courantes du jour), négatif si dépassé. */
-  todayLeft: Cents;
   daysTotal: number;
   /** Jours écoulés, aujourd'hui inclus. */
   daysElapsed: number;
@@ -131,7 +129,6 @@ export function computeSummary(
     resteAVivre,
     todaySpent,
     dailyMax,
-    todayLeft: dailyMax - todayVariable,
     daysTotal,
     daysElapsed,
     daysLeft,
