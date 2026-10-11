@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Screen } from '../../components/Screen';
 import { Badge, Button, Card, Section, TextInput } from '../../components/ui';
+import { Icon } from '../../components/Icon';
 import { useData } from '../../hooks/useData';
 import { toast } from '../../stores/ui';
 import { haptic } from '../../lib/haptics';
@@ -19,10 +20,12 @@ async function copy(text: string, label: string) {
 
 function Step({ n, title, children }: { n: number | string; title: string; children: ReactNode }) {
   return (
-    <div className="flex gap-3 border-b border-separator py-3.5 last:border-0">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-[14px] font-bold text-white">{n}</span>
+    <div className="flex gap-3.5 border-b border-separator py-4 last:border-0">
+      <span className="bg-brand font-rounded flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[14px] font-bold text-white shadow-[0_4px_10px_-4px_rgba(79,70,229,0.7)]">
+        {n}
+      </span>
       <div className="min-w-0 flex-1 text-[15px]">
-        <p className="font-semibold">{title}</p>
+        <p className="font-semibold tracking-[-0.01em]">{title}</p>
         <div className="mt-1 space-y-1.5 text-label-2">{children}</div>
       </div>
     </div>
@@ -31,10 +34,10 @@ function Step({ n, title, children }: { n: number | string; title: string; child
 
 /** Pastille qui imite un élément de l'interface Raccourcis. */
 const Ui = ({ children }: { children: ReactNode }) => (
-  <span className="rounded-md bg-fill px-1.5 py-0.5 font-medium whitespace-nowrap text-label">{children}</span>
+  <span className="rounded-lg bg-fill px-1.5 py-0.5 font-medium whitespace-nowrap text-label">{children}</span>
 );
 const Var = ({ children }: { children: ReactNode }) => (
-  <span className="rounded-md bg-[#0090FF]/15 px-1.5 py-0.5 font-medium whitespace-nowrap text-[#0072cc] dark:text-[#5cb8ff]">{children}</span>
+  <span className="rounded-lg bg-[#0090FF]/15 px-1.5 py-0.5 font-medium whitespace-nowrap text-[#0072cc] dark:text-[#5cb8ff]">{children}</span>
 );
 
 export function ApplePayScreen() {
@@ -90,18 +93,21 @@ export function ApplePayScreen() {
 
   return (
     <Screen title="Apple Pay" back subtitle="Tes paiements ajoutés automatiquement">
-      <Card className="mb-5 p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-[15px] font-semibold">État</p>
+      <Card className="mb-8 p-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[#111114] text-white dark:bg-white dark:text-black" aria-hidden="true">
+            <Icon name="zap" size={20} strokeWidth={2.1} />
+          </span>
+          <p className="flex-1 text-[16px] font-semibold tracking-[-0.01em]">État</p>
           {last ? <Badge tone="positive">Actif</Badge> : key ? <Badge tone="accent">Relais activé</Badge> : <Badge>À configurer</Badge>}
         </div>
-        <p className="mt-1 text-[14px] text-label-2">
+        <p className="mt-3 text-[14px] leading-snug text-label-2">
           {last
             ? `Dernier paiement reçu le ${new Date(last).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} · ${received} paiement(s) enregistré(s).`
             : 'Chaque paiement Apple Pay est envoyé en arrière-plan vers ton relais privé, puis ajouté ici dès que tu ouvres Budget.'}
         </p>
         {!isStandalone() && (
-          <p className="mt-2 rounded-xl bg-warning-soft px-3 py-2 text-[13px]">
+          <p className="mt-3 rounded-2xl bg-warning-soft px-3.5 py-2.5 text-[13px]">
             Tu es dans Safari. Fais ces réglages depuis l'appli <strong>Budget</strong> de ton écran d'accueil.
           </p>
         )}
@@ -112,17 +118,17 @@ export function ApplePayScreen() {
           {!key ? (
             <Step n={1} title="Active le relais">
               <p>L'appli crée une clé secrète et la confie à ton relais Cloudflare. Toi seul la connais.</p>
-              <Button className="mt-1 min-h-11 text-[15px]" onClick={() => void activate()} disabled={busy}>
+              <Button size="sm" className="mt-1.5" onClick={() => void activate()} disabled={busy}>
                 {busy ? 'Activation…' : 'Activer le relais'}
               </Button>
               {alreadyLinked && (
-                <div className="mt-3 rounded-xl bg-fill p-3">
+                <div className="mt-3 rounded-2xl bg-fill p-3.5">
                   <p className="text-[14px]">
                     Le relais a déjà une clé (créée sur un autre appareil ou avant une réinitialisation). Restaure ta sauvegarde, ou colle la clé
                     ci-dessous :
                   </p>
                   <TextInput value={manualKey} onChange={(e) => setManualKey(e.target.value)} placeholder="Clé du relais" aria-label="Clé du relais" className="mt-2" />
-                  <Button variant="tinted" className="mt-2 min-h-11 text-[15px]" onClick={() => void linkExisting()} disabled={busy || manualKey.length < 20}>
+                  <Button variant="tinted" size="sm" className="mt-2" onClick={() => void linkExisting()} disabled={busy || manualKey.length < 20}>
                     Utiliser cette clé
                   </Button>
                 </div>
@@ -132,7 +138,7 @@ export function ApplePayScreen() {
             <>
               <Step n="✓" title="Relais activé">
                 <p>Vérifie que tout fonctionne : l'appli envoie un faux paiement de 0,01 € au relais, puis le récupère.</p>
-                <Button variant="tinted" className="mt-1 min-h-11 text-[15px]" onClick={() => void test()} disabled={busy}>
+                <Button variant="tinted" size="sm" className="mt-1.5" onClick={() => void test()} disabled={busy}>
                   {busy ? 'Test en cours…' : 'Tester le relais'}
                 </Button>
                 <p className="text-[13px]">Tu dois voir « Test Apple Pay · 0,01 € ajouté » (supprime-le ensuite en le glissant vers la gauche).</p>
@@ -146,7 +152,7 @@ export function ApplePayScreen() {
         <Section title="Étape 2 · Créer l'automatisation (5 min, une seule fois)" footer="Libellés de l'app Raccourcis en anglais (iOS 26). En français : Automatisation, Wallet, Exécuter immédiatement, Créer un raccourci, Obtenir le contenu de l'URL.">
           <Card className="px-4">
             <Step n={1} title="Copie l'adresse du relais">
-              <Button variant="tinted" icon="share" className="mt-1 min-h-11 text-[15px]" onClick={() => void copy(shortcutPostUrl(key), 'Adresse')}>
+              <Button variant="tinted" size="sm" icon="share" className="mt-1.5" onClick={() => void copy(shortcutPostUrl(key), 'Adresse')}>
                 Copier l'adresse
               </Button>
               <p className="text-[13px]">Elle contient ta clé secrète : ne la partage pas.</p>
@@ -219,13 +225,13 @@ export function ApplePayScreen() {
       {key && (
         <Section title="Avancé" footer="La clé est incluse dans tes sauvegardes JSON : après une réinstallation, restaurer la sauvegarde suffit.">
           <Card className="p-4">
-            <button className="min-h-11 text-[15px] text-accent" onClick={() => setShowKey(!showKey)}>
+            <button className="min-h-11 text-[15px] font-semibold text-accent" onClick={() => setShowKey(!showKey)}>
               {showKey ? 'Masquer la clé du relais' : 'Afficher la clé du relais'}
             </button>
             {showKey && (
               <div className="mt-1">
                 <p className="font-mono text-[13px] break-all">{key}</p>
-                <Button variant="secondary" className="mt-2 min-h-10 text-[14px]" onClick={() => void copy(key, 'Clé')}>
+                <Button variant="secondary" size="sm" className="mt-2" onClick={() => void copy(key, 'Clé')}>
                   Copier la clé
                 </Button>
               </div>

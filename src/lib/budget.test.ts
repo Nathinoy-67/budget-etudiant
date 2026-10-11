@@ -144,9 +144,14 @@ describe('computeSummary', () => {
     expect(d.resteAVivre).toBe(16500);
     // (16 500 + 500 dépensés aujourd'hui) ÷ 25 jours
     expect(d.dailyMax).toBe(680);
-    // une nouvelle dépense aujourd'hui ne change pas le montant du jour
+    expect(d.todayVariable).toBe(500); // sous la moyenne de 6,80 €
+    // une nouvelle dépense aujourd'hui ne change pas le montant du jour, seulement la position par rapport à lui
     const d2 = computeSummary([...ts, tx({ amount: 300, date: today })], [], period, today, 2000);
     expect(d2.dailyMax).toBe(680);
+    expect(d2.todayVariable).toBe(800); // au-dessus de la moyenne
+    // un abonnement prélevé aujourd'hui est déjà déduit : il ne compte pas dans les dépenses du jour
+    const d3 = computeSummary([...ts, tx({ amount: 999, date: today, recurringId: 'r1' })], [], period, today, 2000);
+    expect(d3.todayVariable).toBe(500);
   });
   it('maximum par jour : 0 si plus rien à dépenser, ou période finie', () => {
     expect(computeSummary([tx({ amount: 5000, date: '2026-10-02' })], [], period, today).dailyMax).toBe(0);

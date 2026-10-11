@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
-import { Button, Field, IconButton, List, Section, Segmented, Select, TextInput } from '../../components/ui';
+import { Button, Field, IconButton, List, Section, Segmented, Select, TextInput, Tile } from '../../components/ui';
 import { Sheet } from '../../components/Sheet';
 import { ColorPicker, EmojiPicker } from '../../components/pickers';
 import { confirmAction } from '../../components/Overlays';
@@ -29,10 +29,10 @@ export function CategoriesScreen() {
   };
 
   return (
-    <Screen title="Catégories" back actions={<IconButton icon="plus" label="Nouvelle catégorie" onClick={() => setEditing({ kind })} />}>
+    <Screen title="Catégories" back actions={<IconButton glass icon="plus" label="Nouvelle catégorie" size={20} onClick={() => setEditing({ kind })} />}>
       <Segmented
         label="Type de catégorie"
-        className="mb-4"
+        className="mb-5"
         value={kind}
         onChange={setKind}
         options={[
@@ -41,15 +41,13 @@ export function CategoriesScreen() {
         ]}
       />
       <Section footer="L'ordre est celui de la grille de saisie rapide. Utilise les flèches pour mettre tes catégories favorites en premier.">
-        <List>
+        <List inset={66}>
           {list.map((c, i) => (
-            <div key={c.id} className="relative flex min-h-[56px] items-center gap-2 pr-1 pl-4">
-              <button onClick={() => setEditing(c)} className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 text-left">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[18px]" style={{ background: `${c.color}2e` }}>
-                  {c.emoji}
-                </span>
+            <div key={c.id} className="relative flex min-h-[62px] items-center gap-2 pr-1 pl-4">
+              <button onClick={() => setEditing(c)} className="flex min-h-[62px] min-w-0 flex-1 items-center gap-3 text-left">
+                <Tile emoji={c.emoji} color={c.color} size={38} round />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[16px]">{c.name}</span>
+                  <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">{c.name}</span>
                   <span className="block truncate text-[13px] text-label-2">
                     {counts.get(c.id) ?? 0} opération(s)
                     {c.budget ? ` · budget ${formatMoney(c.budget, { compact: true })}` : ''}
@@ -67,8 +65,8 @@ export function CategoriesScreen() {
         <Section title="Archivées">
           <List>
             {archived.map((c) => (
-              <button key={c.id} onClick={() => setEditing(c)} className="relative flex min-h-[52px] w-full items-center gap-3 px-4 text-left text-label-2 active:bg-fill">
-                <span className="text-[18px]">{c.emoji}</span>
+              <button key={c.id} onClick={() => setEditing(c)} className="relative flex min-h-[56px] w-full items-center gap-3 px-4 text-left text-label-2 active:bg-fill">
+                <Tile emoji={c.emoji} size={34} round className="opacity-60" />
                 <span className="flex-1 truncate text-[16px]">{c.name}</span>
               </button>
             ))}
@@ -127,10 +125,8 @@ function CategorySheet({ category, onClose }: { category: Partial<Category> | nu
         </button>
       }
     >
-      <div className="mb-4 flex justify-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full text-[32px]" style={{ background: `${color}2e` }}>
-          {emoji}
-        </span>
+      <div className="mt-1 mb-5 flex justify-center">
+        <Tile emoji={emoji} color={color} size={76} round />
       </div>
       <Field label="Nom">{(id) => <TextInput id={id} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. Café, Soirées" maxLength={30} />}</Field>
       {kind === 'expense' ? (

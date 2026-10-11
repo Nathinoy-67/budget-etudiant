@@ -21,12 +21,12 @@ export function TxDayList({ transactions, today }: { transactions: Transaction[]
   return (
     <>
       {groups.map((g) => (
-        <section key={g.date} className="mb-5">
-          <div className="mb-1.5 flex items-baseline justify-between px-1">
-            <h3 className="text-[13px] font-semibold text-label-2">{relativeDayLabel(g.date, today)}</h3>
-            {g.spent > 0 && <Money cents={-g.spent} className="text-[13px] font-medium text-negative" />}
+        <section key={g.date} className="mb-6">
+          <div className="mb-2 flex items-baseline justify-between px-1">
+            <h3 className="text-[12px] font-semibold tracking-[0.06em] text-label-2 uppercase">{relativeDayLabel(g.date, today)}</h3>
+            {g.spent > 0 && <Money cents={-g.spent} className="text-[13px] font-semibold text-negative" />}
           </div>
-          <List>
+          <List inset={68}>
             {g.items.map((t) => (
               <TxRow key={t.id} tx={t} />
             ))}

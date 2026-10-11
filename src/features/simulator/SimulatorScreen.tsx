@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
-import { Button, Card, IconButton, List, Section, Segmented, Select, Toggle } from '../../components/ui';
+import { Button, Card, IconButton, List, Range, Section, Segmented, Select, Tile, Toggle } from '../../components/ui';
 import { useData } from '../../hooks/useData';
 import { averageMonthlyByCategory, simulate } from '../../lib/simulator';
 import { monthlyEquivalent } from '../../lib/recurrence';
@@ -43,20 +43,22 @@ export default function SimulatorScreen() {
 
   return (
     <Screen title="Et si… ?" back subtitle="Teste des économies et vois leur effet">
-      <div className="mb-5 rounded-[22px] bg-ink p-5 text-on-ink">
-        <p className="text-[14px] text-on-ink-2">Tu économiserais</p>
-        <p className={`mt-1 text-[38px] leading-tight font-semibold tracking-[-0.03em] tabular ${result.yearly > 0 ? 'text-[#5ee08f]' : ''}`}>{formatMoney(result.yearly)}</p>
-        <p className="text-[15px] text-on-ink-2">
-          par an, soit <span className="font-medium text-on-ink tabular">{formatMoney(result.monthly)}</span> par mois
+      <div className="hero mb-5 overflow-hidden rounded-[28px] p-5">
+        <p className="text-[12px] font-semibold tracking-[0.09em] text-on-ink-2 uppercase">Tu économiserais</p>
+        <p className={`font-rounded mt-2.5 text-[44px] leading-none font-semibold tracking-[-0.035em] ${result.yearly > 0 ? 'text-hero-positive' : ''}`}>
+          {formatMoney(result.yearly)}
         </p>
-        <div className="mt-4 border-t border-white/15 pt-3 text-[14px] text-on-ink-2">
-          Sur {Number(horizon) / 12} an{Number(horizon) > 12 ? 's' : ''} : <span className="font-medium text-on-ink tabular">{formatMoney(result.total)}</span>
+        <p className="mt-2.5 text-[15px] text-on-ink-2">
+          par an, soit <span className="font-rounded font-semibold text-on-ink">{formatMoney(result.monthly)}</span> par mois
+        </p>
+        <div className="mt-5 border-t border-white/12 pt-3.5 text-[14px] text-on-ink-2">
+          Sur {Number(horizon) / 12} an{Number(horizon) > 12 ? 's' : ''} : <span className="font-rounded font-semibold text-on-ink">{formatMoney(result.total)}</span>
         </div>
       </div>
 
       <Segmented
         label="Horizon"
-        className="mb-5"
+        className="mb-8"
         value={horizon}
         onChange={setHorizon}
         options={[
@@ -104,17 +106,15 @@ export default function SimulatorScreen() {
                 <label className="block">
                   <span className="mb-1 flex justify-between text-[15px]">
                     <span>{l.mode === 'amount' ? 'Réduction par mois' : 'Réduction'}</span>
-                    <strong className="tabular">{l.mode === 'amount' ? `${l.value} €` : `${l.value} %`}</strong>
+                    <strong className="font-rounded tabular">{l.mode === 'amount' ? `${l.value} €` : `${l.value} %`}</strong>
                   </span>
-                  <input
-                    type="range"
+                  <Range
                     min={0}
                     max={l.mode === 'amount' ? Math.max(100, Math.ceil(avg / 100 / 10) * 10) : 100}
-                    step={l.mode === 'amount' ? 5 : 5}
+                    step={5}
                     value={l.value}
-                    onChange={(e) => setLines(lines.map((x) => (x.key === l.key ? { ...x, value: Number(e.target.value) } : x)))}
-                    className="h-11 w-full accent-[var(--accent)]"
-                    aria-label="Montant de la réduction"
+                    onChange={(v) => setLines(lines.map((x) => (x.key === l.key ? { ...x, value: v } : x)))}
+                    label="Montant de la réduction"
                   />
                 </label>
                 <p className="text-[13px] text-label-2">
@@ -137,12 +137,12 @@ export default function SimulatorScreen() {
 
       {subs.length > 0 && (
         <Section title="Résilier un abonnement">
-          <List>
+          <List inset={66}>
             {subs.map((s) => (
-              <div key={s.id} className="relative flex min-h-[52px] items-center gap-3 px-4">
-                <span className="text-[20px]">{s.emoji ?? '📱'}</span>
+              <div key={s.id} className="relative flex min-h-[62px] items-center gap-3 px-4">
+                <Tile emoji={s.emoji ?? '📱'} color={categories.find((c) => c.id === s.categoryId)?.color} size={38} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[16px]">{s.name}</span>
+                  <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">{s.name}</span>
                   <span className="text-[13px] text-negative">{formatMoney(monthlyEquivalent(s.amount, s.frequency, s.interval))}/mois</span>
                 </span>
                 <Toggle
@@ -161,18 +161,9 @@ export default function SimulatorScreen() {
           <label className="block">
             <span className="mb-1 flex justify-between text-[15px]">
               <span>Revenu en plus par mois (job, baby-sitting…)</span>
-              <strong className="tabular">{extraIncome} €</strong>
+              <strong className="font-rounded tabular">{extraIncome} €</strong>
             </span>
-            <input
-              type="range"
-              min={0}
-              max={600}
-              step={10}
-              value={extraIncome}
-              onChange={(e) => setExtraIncome(Number(e.target.value))}
-              className="h-11 w-full accent-[var(--accent)]"
-              aria-label="Revenu supplémentaire mensuel"
-            />
+            <Range min={0} max={600} step={10} value={extraIncome} onChange={setExtraIncome} label="Revenu supplémentaire mensuel" />
           </label>
         </Card>
       </Section>

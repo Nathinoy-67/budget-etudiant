@@ -194,13 +194,13 @@ export function TransactionSheet() {
         ]}
       />
 
-      <div className="my-4 text-center" aria-live="polite">
+      <div className="my-5 text-center" aria-live="polite">
         <span
-          className={`text-[44px] leading-none font-semibold tracking-[-0.03em] tabular ${!amount ? 'text-label opacity-25' : type === 'income' ? 'text-positive' : 'text-negative'}`}
+          className={`font-rounded text-[52px] leading-none font-semibold tracking-[-0.035em] ${!amount ? 'text-label opacity-25' : type === 'income' ? 'text-positive' : 'text-negative'}`}
         >
           {type === 'expense' && amount ? '−' : type === 'income' && amount ? '+' : ''}
           {amount || '0'}
-          <span className="ml-1 text-[30px]">{formatMoney(0).replace(/[\d\s,.  ]/g, '') || '€'}</span>
+          <span className="ml-1 text-[32px]">{formatMoney(0).replace(/[\d\s,.  ]/g, '') || '€'}</span>
         </span>
       </div>
 
@@ -214,12 +214,12 @@ export function TransactionSheet() {
             role="radio"
             aria-checked={date === d.value}
             onClick={() => setDate(d.value)}
-            className={`min-h-10 shrink-0 rounded-full px-3.5 text-[14px] font-medium ${date === d.value ? 'bg-label text-bg' : 'bg-fill'}`}
+            className={`pressable min-h-10 shrink-0 rounded-full px-4 text-[14px] font-semibold transition-colors ${date === d.value ? 'bg-label text-bg' : 'bg-fill'}`}
           >
             {d.label}
           </button>
         ))}
-        <label className={`relative flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium ${customDate ? 'bg-label text-bg' : 'bg-fill'}`}>
+        <label className={`relative flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold transition-colors ${customDate ? 'bg-label text-bg' : 'bg-fill'}`}>
           <Icon name="calendar" size={16} />
           {customDate ? relativeDayLabel(date, today) : 'Autre date'}
           <input
@@ -241,29 +241,31 @@ export function TransactionSheet() {
         maxLength={120}
         enterKeyHint="done"
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        className="mt-3 min-h-11 w-full rounded-xl bg-fill px-3.5 text-[16px] placeholder:text-label-3"
+        className="mt-3 min-h-12 w-full rounded-2xl bg-fill px-4 text-[16px] transition-shadow placeholder:text-label-2 focus:shadow-[0_0_0_2px_var(--accent)] focus:outline-none"
       />
 
       {editing?.recurringId ? (
-        <div className="mt-3 flex min-h-12 items-center gap-3 rounded-xl bg-fill px-3.5 py-2">
-          <Icon name="repeat" size={18} className="shrink-0 text-label-2" />
+        <div className="mt-3 flex min-h-14 items-center gap-3 rounded-2xl bg-fill px-4 py-2.5">
+          <span className="bg-brand flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-white" aria-hidden="true">
+            <Icon name="repeat" size={16} strokeWidth={2.2} />
+          </span>
           <span className="min-w-0 flex-1 text-[14px] text-label-2">
             {linked
               ? `${linked.isSubscription ? 'Abonnement' : type === 'income' ? 'Revenu régulier' : 'Charge fixe'} · ${formatMoney(linked.amount)}${linkedStopped ? ' · arrêté' : ''}`
               : 'Opération récurrente'}
-            <span className="block text-[12px] text-label-3">La modifier ici ne change que celle-ci.</span>
+            <span className="block text-[12px] text-label-2">La modifier ici ne change que celle-ci.</span>
           </span>
           {linked && !linkedStopped && (
-            <button onClick={() => void stop()} className="min-h-10 shrink-0 px-1 text-[15px] font-medium text-negative">
+            <button onClick={() => void stop()} className="pressable min-h-9 shrink-0 rounded-full bg-negative-soft px-3.5 text-[14px] font-semibold text-negative">
               Arrêter
             </button>
           )}
         </div>
       ) : (
-        <div className="mt-3 rounded-xl bg-fill px-3.5 py-1.5">
+        <div className="mt-3 rounded-2xl bg-fill px-4 py-2.5">
           <div className="flex min-h-10 items-center justify-between gap-3">
             <span className="min-w-0">
-              <span className="block text-[15px]">{REPEAT_LABEL[type]}</span>
+              <span className="block text-[15px] font-medium">{REPEAT_LABEL[type]}</span>
               {!repeat && <span className="block text-[12px] text-label-2">{REPEAT_HINT[type]}</span>}
             </span>
             <Toggle checked={repeat} onChange={setRepeat} label={REPEAT_LABEL[type]} />

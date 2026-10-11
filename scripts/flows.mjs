@@ -65,8 +65,12 @@ assert.equal(await page.getByText('Fin du mois', { exact: true }).count(), 0, 'p
 assert.equal(await page.getByText('Maximum par jour', { exact: true }).count(), 0, 'plus de carte maximum par jour');
 assert.ok(await page.getByText('Par jour', { exact: true }).isVisible(), 'moyenne par jour à la place des abonnements');
 assert.equal(await page.getByText('et charges fixes', { exact: true }).count(), 0, "plus d'abonnements sur l'accueil");
+assert.ok(
+  await page.getByRole('group', { name: /^Aujourd'hui : .*(sous la moyenne|au-dessus de la moyenne|Pile dans la moyenne|Plus de marge)/ }).isVisible(),
+  "aujourd'hui : sous ou au-dessus de la moyenne par jour",
+);
 assert.ok(await page.getByText('Données exemple', { exact: true }).isVisible(), 'bandeau données exemple');
-step('accueil : 4 onglets, opérations récentes, par jour, pas de prévision');
+step('accueil : 4 onglets, opérations récentes, par jour et position du jour, pas de prévision');
 
 // --- Somme à garder en fin de mois ---
 const ravBefore = await resteAVivre();

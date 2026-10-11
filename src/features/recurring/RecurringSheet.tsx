@@ -211,9 +211,9 @@ export function RecurringSheet({
       </div>
 
       {type === 'expense' && (
-        <div className="mb-4 rounded-xl bg-fill px-3.5 py-2">
+        <div className="mb-4 rounded-2xl bg-fill px-4 py-2">
           <div className="flex min-h-11 items-center justify-between">
-            <span className="text-[16px]">C'est un abonnement</span>
+            <span className="text-[16px] font-medium">C'est un abonnement</span>
             <Toggle checked={isSubscription} onChange={setIsSubscription} label="C'est un abonnement" />
           </div>
         </div>
@@ -221,8 +221,8 @@ export function RecurringSheet({
 
       {live && (
         <>
-          <div className="mb-4 flex min-h-12 items-center justify-between rounded-xl bg-fill px-3.5">
-            <span className="text-[16px]">{live.active ? 'Active' : 'En pause'}</span>
+          <div className="mb-4 flex min-h-14 items-center justify-between rounded-2xl bg-fill px-4">
+            <span className="text-[16px] font-medium">{live.active ? 'Active' : 'En pause'}</span>
             <Toggle
               checked={live.active}
               onChange={(v) => void updateRecurring(live.id, { active: v }).then(() => toast(v ? 'Reprise' : 'Mise en pause'))}
@@ -233,11 +233,11 @@ export function RecurringSheet({
           {live.active && upcoming.length > 0 && (
             <>
               <p className="mb-1.5 px-1 text-[13px] font-medium text-label-2">Prochaines échéances</p>
-              <div className="mb-4 overflow-hidden rounded-xl bg-fill">
+              <div className="mb-4 overflow-hidden rounded-2xl bg-fill">
                 {upcoming.map((d) => {
                   const skipped = live.skipped.includes(d);
                   return (
-                    <div key={d} className="flex min-h-12 items-center justify-between border-b border-separator px-3.5 last:border-0">
+                    <div key={d} className="flex min-h-12 items-center justify-between border-b border-separator px-4 last:border-0">
                       <span className={`text-[15px] ${skipped ? 'text-label-3 line-through' : ''}`}>
                         {formatShortDate(d, today)} <span className="text-label-2">· {inDaysLabel(d, today)}</span>
                       </span>
@@ -248,7 +248,7 @@ export function RecurringSheet({
                             toast(skipped ? 'Échéance rétablie' : `Échéance du ${formatShortDate(d)} sautée`),
                           );
                         }}
-                        className="min-h-10 px-2 text-[15px] font-medium text-accent"
+                        className="pressable min-h-9 rounded-full px-3 text-[14px] font-semibold text-accent"
                       >
                         {skipped ? 'Rétablir' : 'Sauter'}
                       </button>

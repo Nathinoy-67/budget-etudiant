@@ -52,7 +52,7 @@ export function Sheet({ open, onClose, title, left, right, children, footer, ful
             role="dialog"
             aria-modal="true"
             aria-labelledby={title ? titleId : undefined}
-            className={`absolute inset-x-0 bottom-0 mx-auto flex max-w-xl flex-col rounded-t-[14px] bg-elevated shadow-2xl ${
+            className={`absolute inset-x-0 bottom-0 mx-auto flex max-w-xl flex-col rounded-t-[28px] bg-elevated shadow-[0_-10px_40px_-12px_rgba(0,0,0,0.35)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${
               full ? 'h-[calc(100dvh-env(safe-area-inset-top)-12px)]' : 'max-h-[calc(100dvh-env(safe-area-inset-top)-12px)]'
             }`}
             initial={{ y: '100%' }}
@@ -67,11 +67,11 @@ export function Sheet({ open, onClose, title, left, right, children, footer, ful
             onDragEnd={onDragEnd}
           >
             <div className="shrink-0 touch-none select-none" onPointerDown={(e) => controls.start(e)}>
-              <div className="flex justify-center pt-2 pb-1">
-                <div className="h-[5px] w-9 rounded-full bg-fill-2" />
+              <div className="flex justify-center pt-2.5 pb-1">
+                <div className="h-[5px] w-10 rounded-full bg-fill-2" />
               </div>
               {(title || left || right) && (
-                <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center px-2 pb-1">
+                <div className="grid min-h-12 grid-cols-[1fr_auto_1fr] items-center px-2.5 pb-1.5">
                   <div className="justify-self-start">
                     {left ?? (
                       <button className="min-h-11 px-2 text-[17px] text-accent" onClick={onClose}>
@@ -79,7 +79,7 @@ export function Sheet({ open, onClose, title, left, right, children, footer, ful
                       </button>
                     )}
                   </div>
-                  <h2 id={titleId} className="truncate px-1 text-center text-[17px] font-semibold">
+                  <h2 id={titleId} className="truncate px-1 text-center text-[17px] font-semibold tracking-[-0.015em]">
                     {title}
                   </h2>
                   <div className="justify-self-end">{right}</div>

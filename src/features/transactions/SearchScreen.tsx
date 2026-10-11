@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
-import { Button, EmptyState, Field, IconButton, Segmented, TextInput } from '../../components/ui';
+import { Button, EmptyState, Field, IconButton, Money, Segmented, TextInput } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { useData } from '../../hooks/useData';
 import { useNav } from '../../stores/nav';
 import { shiftPeriod, type Period } from '../../lib/dates';
-import { formatMoney, parseAmount } from '../../lib/money';
+import { parseAmount } from '../../lib/money';
 import { TxDayList } from './TxDayList';
 import type { ID } from '../../types';
 
@@ -77,10 +77,10 @@ export function SearchScreen({ params, root }: { params?: Record<string, string>
       back={!root}
       actions={
         <span className="relative flex items-center">
-          {root && <IconButton icon="upload" label="Importer un relevé" onClick={() => push('import')} />}
-          <IconButton icon="filter" label="Filtres" onClick={() => setShowFilters(true)} />
+          {root && <IconButton glass icon="upload" label="Importer un relevé" size={19} onClick={() => push('import')} />}
+          <IconButton glass icon="filter" label="Filtres" size={18} onClick={() => setShowFilters(true)} />
           {filterCount > 0 && (
-            <span className="pointer-events-none absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+            <span className="bg-brand pointer-events-none absolute top-0.5 right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
               {filterCount}
             </span>
           )}
@@ -88,7 +88,7 @@ export function SearchScreen({ params, root }: { params?: Record<string, string>
       }
     >
       <div className="relative mb-3">
-        <Icon name="search" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-label-3" />
+        <Icon name="search" size={18} strokeWidth={2.2} className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-label-2" />
         <input
           type="search"
           value={query}
@@ -98,7 +98,7 @@ export function SearchScreen({ params, root }: { params?: Record<string, string>
           }}
           placeholder="Commerçant, catégorie, montant…"
           aria-label="Rechercher une opération"
-          className="min-h-11 w-full rounded-xl bg-fill pr-3 pl-9 text-[16px] placeholder:text-label-3"
+          className="min-h-12 w-full rounded-2xl bg-card pr-4 pl-11 text-[16px] shadow-card transition-shadow placeholder:text-label-2 focus:shadow-[0_0_0_2px_var(--accent)] focus:outline-none"
         />
       </div>
 
@@ -113,8 +113,8 @@ export function SearchScreen({ params, root }: { params?: Record<string, string>
         options={(Object.keys(PRESET_LABEL) as PeriodPreset[]).map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
       />
 
-      <p className="mb-4 px-1 text-[13px] text-label-2">
-        {filtered.length} opération{filtered.length > 1 ? 's' : ''} · {formatMoney(spent)} de dépenses
+      <p className="mb-5 px-1 text-[13px] text-label-2">
+        {filtered.length} opération{filtered.length > 1 ? 's' : ''} · <Money cents={spent} className="font-semibold text-label" /> de dépenses
       </p>
 
       {filtered.length === 0 ? (
@@ -173,7 +173,7 @@ export function SearchScreen({ params, root }: { params?: Record<string, string>
                   key={c.id}
                   aria-pressed={on}
                   onClick={() => setCategoryIds(on ? categoryIds.filter((x) => x !== c.id) : [...categoryIds, c.id])}
-                  className={`min-h-10 rounded-full px-3.5 text-[14px] font-medium ${on ? 'bg-label text-bg' : 'bg-fill'}`}
+                  className={`pressable min-h-10 rounded-full px-3.5 text-[14px] font-medium transition-colors ${on ? 'bg-label text-bg' : 'bg-fill'}`}
                 >
                   {c.emoji} {c.name}
                 </button>

@@ -36,6 +36,8 @@ export interface MonthSummary {
   resteAVivre: Cents;
   /** Dépenses d'aujourd'hui. */
   todaySpent: Cents;
+  /** Dépenses courantes d'aujourd'hui (hors abonnements et charges fixes), à comparer à dailyMax. */
+  todayVariable: Cents;
   /**
    * Moyenne à dépenser par jour jusqu'à la fin du mois, aujourd'hui inclus, pour finir le mois avec au moins la somme à garder :
    * reste à vivre (avant les dépenses courantes d'aujourd'hui) ÷ jours restants. 0 si plus rien à dépenser.
@@ -128,6 +130,7 @@ export function computeSummary(
     keepAtEnd: keep,
     resteAVivre,
     todaySpent,
+    todayVariable,
     dailyMax,
     daysTotal,
     daysElapsed,

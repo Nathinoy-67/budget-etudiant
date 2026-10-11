@@ -88,25 +88,27 @@ export function SettingsScreen() {
     <Screen title="Réglages">
       <Section title="Mon budget" footer="Début du mois : si tes revenus tombent le 5, choisis le 5 (le mois ira du 5 au 4).">
         <List>
-          <Row icon="upload" title="Importer un relevé bancaire" subtitle="Récupère tes opérations d'un coup (CSV, OFX)" chevron onClick={() => push('import')} />
-          <Row icon="repeat" title="Revenus et charges fixes" subtitle="Salaire, APL, loyer, abonnements…" chevron onClick={() => push('recurrings')} />
+          <Row icon="upload" iconBg="#0A84FF" title="Importer un relevé bancaire" subtitle="Récupère tes opérations d'un coup (CSV, OFX)" chevron onClick={() => push('import')} />
+          <Row icon="repeat" iconBg="#30A46C" title="Revenus et charges fixes" subtitle="Salaire, APL, loyer, abonnements…" chevron onClick={() => push('recurrings')} />
           <Row
             icon="piggy"
+            iconBg="#FF9F0A"
             title="À garder en fin de mois"
             subtitle="Minimum qui doit rester sur le compte"
             value={settings.keepAtEnd ? formatMoney(settings.keepAtEnd) : 'Aucun'}
             chevron
             onClick={() => setEditKeep(true)}
           />
-          <Row icon="tag" title="Catégories" chevron onClick={() => push('categories')} />
+          <Row icon="tag" iconBg="#AF52DE" title="Catégories" chevron onClick={() => push('categories')} />
           <Row
             icon="zap"
+            iconBg="#5E5CE6"
             title="Paiements Apple Pay"
             subtitle={settings.lastApplePayAt ? 'Ajout automatique actif' : 'Ajoute tes achats automatiquement'}
             chevron
             onClick={() => push('applepay')}
           />
-          <Row icon="calendar" title="Début du mois">
+          <Row icon="calendar" iconBg="#FF3B30" title="Début du mois">
             <select aria-label="Premier jour du mois" className={selectCls} value={settings.monthStartDay} onChange={(e) => set({ monthStartDay: Number(e.target.value) })}>
               {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                 <option key={d} value={d}>
@@ -116,7 +118,7 @@ export function SettingsScreen() {
               ))}
             </select>
           </Row>
-          <Row icon="wallet" title="Devise">
+          <Row icon="wallet" iconBg="#00A6A0" title="Devise">
             <select aria-label="Devise" className={selectCls} value={settings.currency} onChange={(e) => set({ currency: e.target.value })}>
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -142,7 +144,7 @@ export function SettingsScreen() {
           />
         </div>
         <List>
-          <Row icon="zap" title="Retour haptique" subtitle="Vibrations légères (iOS 18+)">
+          <Row icon="zap" iconBg="#FF2D55" title="Retour haptique" subtitle="Vibrations légères (iOS 18+)">
             <Toggle checked={settings.haptics} onChange={(haptics) => set({ haptics })} label="Retour haptique" />
           </Row>
         </List>

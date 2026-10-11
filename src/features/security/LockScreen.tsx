@@ -9,8 +9,20 @@ import { Icon } from '../../components/Icon';
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 30_000;
 
-/** Pavé de code PIN à 4 chiffres (réutilisé pour la création du code). */
-export function PinPad({ onComplete, title, subtitle, error }: { onComplete: (pin: string) => void; title: string; subtitle?: string; error?: string | null }) {
+/** Pavé de code PIN à 4 chiffres (réutilisé pour la création du code). `onInk` : sur le fond sombre de l'écran verrouillé. */
+export function PinPad({
+  onComplete,
+  title,
+  subtitle,
+  error,
+  onInk,
+}: {
+  onComplete: (pin: string) => void;
+  title: string;
+  subtitle?: string;
+  error?: string | null;
+  onInk?: boolean;
+}) {
   const [pin, setPin] = useState('');
   const shake = useAnimation();
 
@@ -35,13 +47,16 @@ export function PinPad({ onComplete, title, subtitle, error }: { onComplete: (pi
 
   return (
     <div className="flex flex-col items-center">
-      <p className="text-[20px] font-semibold">{title}</p>
-      <p className={`mt-1 min-h-5 text-[15px] ${error ? 'text-negative' : 'text-label-2'}`} aria-live="assertive">
+      <p className="text-[21px] font-semibold tracking-[-0.02em]">{title}</p>
+      <p
+        className={`mt-1 min-h-5 text-[15px] ${error ? (onInk ? 'text-hero-negative' : 'text-negative') : onInk ? 'text-white/70' : 'text-label-2'}`}
+        aria-live="assertive"
+      >
         {error ?? subtitle}
       </p>
       <motion.div animate={shake} className="my-7 flex gap-5" aria-label={`${pin.length} chiffre(s) saisi(s) sur 4`}>
         {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`h-3.5 w-3.5 rounded-full border-2 border-label transition-colors ${i < pin.length ? 'bg-label' : ''}`} />
+          <span key={i} className={`h-3.5 w-3.5 rounded-full border-2 border-current transition-colors duration-150 ${i < pin.length ? 'bg-current' : ''}`} />
         ))}
       </motion.div>
       <div className="grid grid-cols-3 gap-x-6 gap-y-4">
@@ -53,7 +68,9 @@ export function PinPad({ onComplete, title, subtitle, error }: { onComplete: (pi
               key={i}
               onClick={() => press(d)}
               aria-label={d === 'back' ? 'Effacer' : d}
-              className={`flex h-[76px] w-[76px] items-center justify-center rounded-full text-[32px] font-normal ${d === 'back' ? '' : 'bg-fill active:bg-fill-2'}`}
+              className={`font-rounded flex h-[76px] w-[76px] items-center justify-center rounded-full text-[32px] font-normal transition-colors ${
+                d === 'back' ? '' : onInk ? 'bg-white/12 active:bg-white/30' : 'bg-fill active:bg-fill-2'
+              }`}
             >
               {d === 'back' ? <Icon name="backspace" size={28} /> : d}
             </button>
@@ -106,18 +123,31 @@ export function LockScreen() {
   const waiting = lockedUntil > now;
 
   return (
-    <div className="pt-safe pb-safe fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg" role="dialog" aria-modal="true" aria-label="Appli verrouillée">
-      <img src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" width={56} height={56} className="mb-6 rounded-[14px]" />
+    <div
+      className="pt-safe pb-safe fixed inset-0 z-[90] flex flex-col items-center justify-center text-white"
+      style={{ background: 'var(--hero)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Appli verrouillée"
+    >
+      <img
+        src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
+        alt=""
+        width={60}
+        height={60}
+        className="mb-7 rounded-[16px] shadow-[0_10px_30px_-8px_rgba(0,0,0,0.6)]"
+      />
       <div className={waiting ? 'pointer-events-none opacity-40' : ''}>
         <PinPad
           title="Entre ton code"
           subtitle={waiting ? `Patiente ${Math.ceil((lockedUntil - now) / 1000)} s` : 'Budget Étudiant est verrouillé'}
           error={waiting ? `Patiente ${Math.ceil((lockedUntil - now) / 1000)} s` : error}
           onComplete={(p) => void tryPin(p)}
+          onInk
         />
       </div>
       {settings.biometricId && (
-        <button onClick={() => void tryBiometric()} className="mt-6 flex min-h-11 items-center gap-2 px-4 text-[17px] text-accent">
+        <button onClick={() => void tryBiometric()} className="mt-7 flex min-h-11 items-center gap-2 rounded-full bg-white/12 px-5 text-[16px] font-semibold text-white">
           <Icon name="faceid" size={24} /> Utiliser Face ID / Touch ID
         </button>
       )}

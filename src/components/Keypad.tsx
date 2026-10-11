@@ -39,11 +39,11 @@ export function Keypad({ value, onChange, compact }: { value: string; onChange: 
               onChange('');
             }
           }}
-          className={`pressable flex items-center justify-center rounded-xl bg-fill text-[26px] font-medium tabular active:bg-fill-2 ${
-            compact ? 'h-12' : 'h-[54px]'
-          }`}
+          className={`pressable font-rounded flex items-center justify-center rounded-2xl text-[26px] font-medium tabular active:bg-fill-2 ${
+            k === 'back' ? 'text-label-2' : 'bg-fill'
+          } ${compact ? 'h-12' : 'h-[54px]'}`}
         >
-          {k === 'back' ? <Icon name="backspace" size={26} /> : k}
+          {k === 'back' ? <Icon name="backspace" size={26} strokeWidth={1.8} /> : k}
         </button>
       ))}
     </div>

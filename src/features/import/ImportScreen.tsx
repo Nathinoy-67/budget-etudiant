@@ -102,7 +102,7 @@ export function ImportScreen() {
       {!candidates && (
         <>
           <Section title="1. Télécharge tes opérations">
-            <Card className="space-y-2.5 p-4 text-[14px] leading-snug text-label-2">
+            <Card className="space-y-2.5 p-5 text-[14px] leading-snug text-label-2">
               <p>
                 Dans <strong className="text-label">Safari</strong>, va sur <strong className="text-label">credit-agricole.fr</strong> et connecte-toi à ton
                 espace client (l'appli Ma Banque ne permet généralement pas l'export).
@@ -121,12 +121,12 @@ export function ImportScreen() {
               Choisir le fichier
             </Button>
             {error && (
-              <p className="mt-3 rounded-xl bg-negative-soft px-3.5 py-2.5 text-[14px] text-negative" role="alert">
+              <p className="mt-3 rounded-2xl bg-negative-soft px-4 py-3 text-[14px] text-negative" role="alert">
                 {error}
               </p>
             )}
             {preview && (
-              <div className="mt-3 rounded-xl bg-card p-3 shadow-card">
+              <div className="mt-3 rounded-[22px] bg-card p-4 shadow-card">
                 <p className="mb-1.5 text-[12px] font-medium text-label-2">Début du fichier « {fileName} »</p>
                 <pre className="overflow-x-auto text-[11px] leading-snug whitespace-pre-wrap text-label">{preview}</pre>
               </div>
@@ -142,7 +142,7 @@ export function ImportScreen() {
 
       {candidates && (
         <>
-          <Card className="mb-4 p-4">
+          <Card className="mb-8 p-5">
             <p className="truncate text-[13px] text-label-2">{fileName}</p>
             <p className="mt-0.5 text-[15px]">
               {candidates.length} opérations, du {formatShortDate(candidates[candidates.length - 1].date, today)} au {formatShortDate(candidates[0].date, today)}
@@ -152,7 +152,7 @@ export function ImportScreen() {
                 {(id) => <TextInput id={id} type="date" value={from} max={today} onChange={(e) => e.target.value && setFrom(e.target.value)} />}
               </Field>
             </div>
-            <button className="min-h-10 text-[14px] font-medium text-accent" onClick={() => fileInput.current?.click()}>
+            <button className="min-h-10 text-[15px] font-semibold text-accent" onClick={() => fileInput.current?.click()}>
               Choisir un autre fichier
             </button>
           </Card>
@@ -164,7 +164,7 @@ export function ImportScreen() {
               title={`${toImport.length} à importer`}
               footer={duplicates > 0 ? `${duplicates} opération${duplicates > 1 ? 's' : ''} déjà dans l'appli, décochée${duplicates > 1 ? 's' : ''} automatiquement.` : undefined}
             >
-              <div className="overflow-hidden rounded-2xl bg-card shadow-card">
+              <div className="overflow-hidden rounded-[22px] bg-card shadow-card">
                 {visible.map((c) => {
                   const on = selected.has(c.key);
                   const cat = c.categoryId ? categoryById.get(c.categoryId) : undefined;
@@ -174,16 +174,16 @@ export function ImportScreen() {
                       role="checkbox"
                       aria-checked={on}
                       onClick={() => toggle(c.key)}
-                      className="flex min-h-[60px] w-full items-center gap-3 border-b border-separator px-4 py-2 text-left last:border-0 active:bg-fill"
+                      className="flex min-h-[64px] w-full items-center gap-3 border-b border-separator px-4 py-2 text-left transition-colors last:border-0 active:bg-fill"
                     >
                       <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${on ? 'border-accent bg-accent text-white' : 'border-label-3'}`}
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${on ? 'bg-brand text-white' : 'border-2 border-label-3'}`}
                         aria-hidden="true"
                       >
                         {on && <Icon name="check" size={14} strokeWidth={3} />}
                       </span>
                       <span className={`min-w-0 flex-1 ${on ? '' : 'opacity-50'}`}>
-                        <span className="block truncate text-[15px] font-medium">
+                        <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">
                           {cat?.emoji} {c.note}
                         </span>
                         <span className="block truncate text-[13px] text-label-2">
@@ -203,8 +203,8 @@ export function ImportScreen() {
             </Section>
           )}
 
-          <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-10 pt-2">
-            <Button block onClick={() => void doImport()} disabled={busy || toImport.length === 0} className="shadow-lg">
+          <div className="sticky bottom-[calc(max(10px,env(safe-area-inset-bottom)-12px)+80px)] z-10 pt-2">
+            <Button block onClick={() => void doImport()} disabled={busy || toImport.length === 0}>
               {busy ? 'Import…' : `Importer ${toImport.length} opération${toImport.length > 1 ? 's' : ''}`}
             </Button>
           </div>

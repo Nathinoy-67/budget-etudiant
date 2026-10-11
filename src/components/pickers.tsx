@@ -3,6 +3,7 @@ import type { Account, Category, ID } from '../types';
 import { EMOJI_CHOICES, PALETTE } from '../db/defaults';
 import { haptic } from '../lib/haptics';
 import { Icon } from './Icon';
+import { Tile } from './ui';
 
 export function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   return (
@@ -17,8 +18,8 @@ export function ColorPicker({ value, onChange }: { value: string; onChange: (c: 
             haptic('light');
             onChange(c);
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-full"
-          style={{ background: c }}
+          className={`pressable flex h-11 w-11 items-center justify-center rounded-full ${value === c ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-elevated)]' : ''}`}
+          style={{ background: c, ['--tw-ring-color' as string]: c }}
         >
           {value === c && <Icon name="check" size={20} className="text-white" strokeWidth={3} />}
         </button>
@@ -41,7 +42,7 @@ export function EmojiPicker({ value, onChange }: { value: string; onChange: (e: 
             }}
             aria-label={`Emoji ${e}`}
             aria-pressed={value === e}
-            className={`flex h-11 items-center justify-center rounded-xl text-[22px] ${value === e ? 'bg-accent-soft ring-2 ring-accent' : ''}`}
+            className={`flex h-11 items-center justify-center rounded-2xl text-[22px] ${value === e ? 'bg-accent-soft shadow-[inset_0_0_0_2px_var(--accent)]' : ''}`}
           >
             {e}
           </button>
@@ -56,7 +57,7 @@ export function EmojiPicker({ value, onChange }: { value: string; onChange: (e: 
         }}
         placeholder="…ou tape un autre emoji"
         aria-label="Autre emoji"
-        className="mt-2 min-h-11 w-full rounded-xl bg-fill px-3 text-[16px]"
+        className="mt-2 min-h-12 w-full rounded-2xl bg-fill px-4 text-[16px] placeholder:text-label-2 focus:shadow-[0_0_0_2px_var(--accent)] focus:outline-none"
       />
     </div>
   );
@@ -85,12 +86,12 @@ export function CategoryGrid({
               haptic('light');
               onChange(c.id);
             }}
-            className={`pressable flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 transition-colors ${
-              selected ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]' : 'bg-fill'
+            className={`pressable flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl px-1 py-2 transition-colors ${
+              selected ? 'bg-accent-soft shadow-[inset_0_0_0_2px_var(--accent)]' : 'bg-fill'
             }`}
           >
-            <span className="text-[22px] leading-none">{c.emoji}</span>
-            <span className={`line-clamp-1 w-full text-center text-[11px] font-medium ${selected ? 'text-accent' : 'text-label-2'}`}>{c.name}</span>
+            <Tile emoji={c.emoji} color={c.color} size={34} round />
+            <span className={`line-clamp-1 w-full text-center text-[11px] font-semibold ${selected ? 'text-accent' : 'text-label-2'}`}>{c.name}</span>
           </button>
         );
       })}

@@ -38,9 +38,12 @@ export function BackupBanner() {
   };
 
   return (
-    <div className="mb-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card" role="status">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-fill text-label-2" aria-hidden="true">
-        <Icon name="database" size={17} />
+    <div className="mb-3 flex items-center gap-3 rounded-[22px] bg-card py-3 pr-3 pl-4 shadow-card" role="status">
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[linear-gradient(180deg,#ffb84d,#ff9f0a)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
+        aria-hidden="true"
+      >
+        <Icon name="database" size={18} strokeWidth={2.1} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-medium">{settings.lastBackupAt ? `Dernière sauvegarde il y a ${days} jours` : 'Sauvegarde tes données'}</p>
@@ -49,7 +52,7 @@ export function BackupBanner() {
       <button onClick={snooze} className="min-h-10 px-1 text-[14px] text-label-2" aria-label="Me le rappeler plus tard">
         Plus tard
       </button>
-      <button onClick={() => void exportJSON()} className="min-h-10 px-1 text-[14px] font-semibold text-accent">
+      <button onClick={() => void exportJSON()} className="pressable min-h-9 rounded-full bg-accent-soft px-3 text-[14px] font-semibold text-accent">
         Sauvegarder
       </button>
     </div>

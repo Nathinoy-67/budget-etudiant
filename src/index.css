@@ -3,67 +3,100 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Palette sobre : base neutre, un seul accent (indigo profond) réservé à ce qui est interactif,
- * couleurs sémantiques (rouge / orange / vert) seulement quand elles ont un sens.
- * Contrastes vérifiés WCAG AA pour le texte.
+ * Style premium : surfaces douces et profondes, un seul accent (l'indigo-violet de l'icône).
+ * Le dégradé de marque est réservé aux éléments forts (carte principale, bouton +, bouton principal).
+ * Couleurs sémantiques (vert / rouge / orange) seulement quand elles ont un sens.
+ * Contrastes vérifiés WCAG AA pour le texte (label-3 sert aux icônes et décorations, pas au texte utile).
  */
 :root {
-  --bg: #f4f4f6;
+  --bg: #f2f2f7;
   --bg-elevated: #ffffff;
   --card: #ffffff;
-  --card-2: #f4f4f6;
-  --fill: rgba(16, 16, 28, 0.05);
-  --fill-2: rgba(16, 16, 28, 0.09);
-  --separator: rgba(16, 16, 28, 0.08);
-  --label: #0e0e12;
-  --label-2: #62626d;
-  --label-3: #9c9ca6;
-  --accent: #4338ca;
-  --accent-soft: rgba(67, 56, 202, 0.09);
-  --positive: #0f7b3f;
+  --card-2: #f7f7fa;
+  /* listes posées dans une feuille (fond blanc en clair) */
+  --sheet-card: #f3f3f7;
+  /* ligne touchée (opaque : le fond rouge de suppression ne doit pas transparaître) */
+  --card-pressed: #f0f0f4;
+  --fill: rgba(22, 22, 44, 0.05);
+  --fill-2: rgba(22, 22, 44, 0.09);
+  --separator: rgba(22, 22, 44, 0.08);
+  --label: #0b0b14;
+  --label-2: #5f5f6e;
+  --label-3: #a0a0ad;
+  --accent: #4f46e5;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --positive: #0e7a43;
   --negative: #c8281e;
   --warning: #a15c00;
-  --positive-soft: rgba(15, 123, 63, 0.09);
-  --negative-soft: rgba(200, 40, 30, 0.08);
+  --positive-soft: rgba(14, 122, 67, 0.1);
+  --negative-soft: rgba(200, 40, 30, 0.09);
   --warning-soft: rgba(161, 92, 0, 0.1);
   --ink: #131316;
   --on-ink: #ffffff;
-  --on-ink-2: rgba(255, 255, 255, 0.6);
-  --tabbar: rgba(250, 250, 251, 0.88);
-  --backdrop: rgba(0, 0, 0, 0.32);
-  --card-shadow: 0 1px 2px rgba(16, 16, 28, 0.04), 0 0 0 1px rgba(16, 16, 28, 0.03);
+  --on-ink-2: rgba(255, 255, 255, 0.68);
+  --backdrop: rgba(10, 10, 24, 0.36);
+  /* verre dépoli (barre d'onglets, en-têtes, boutons ronds) */
+  --glass: rgba(255, 255, 255, 0.84);
+  --glass-border: rgba(22, 22, 44, 0.07);
+  --tab-active: rgba(79, 70, 229, 0.1);
+  --card-shadow: 0 0 0 1px rgba(22, 22, 44, 0.035), 0 1px 2px rgba(22, 22, 44, 0.04), 0 10px 28px -14px rgba(22, 22, 44, 0.14);
+  --float-shadow: 0 0 0 0.5px rgba(22, 22, 44, 0.05), 0 14px 34px -10px rgba(22, 22, 44, 0.28);
+  /* lueur de marque derrière le haut des écrans */
+  --glow: rgba(124, 108, 242, 0.17);
+  /* intensité des pastilles colorées des catégories */
+  --tint: 15%;
+  --brand: linear-gradient(135deg, #8b7bff 0%, #5b4cf0 50%, #4338ca 100%);
+  --brand-shadow: 0 10px 24px -10px rgba(79, 70, 229, 0.75);
+  /* carte principale : nuit profonde, halos violets, reflet métal */
+  --hero:
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(110% 95% at 100% 0%, rgba(139, 123, 255, 0.6) 0%, rgba(139, 123, 255, 0) 62%),
+    radial-gradient(85% 100% at 0% 100%, rgba(67, 56, 202, 0.6) 0%, rgba(67, 56, 202, 0) 66%),
+    linear-gradient(155deg, #211b52 0%, #120f2e 55%, #0b0a1d 100%);
+  --hero-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 22px 44px -22px rgba(46, 34, 160, 0.65);
+  --hero-positive: #7cf0b0;
+  --hero-negative: #ff9b94;
   /* séries de graphiques (palette validée daltonisme) */
   --series-1: #2a78d6;
   --series-2: #eb6834;
-  --chart-grid: rgba(16, 16, 28, 0.07);
+  --chart-grid: rgba(22, 22, 44, 0.07);
   color-scheme: light;
 }
 
 .dark {
-  --bg: #000000;
-  --bg-elevated: #1c1c1f;
-  --card: #151517;
-  --card-2: #1c1c1f;
-  --fill: rgba(255, 255, 255, 0.06);
-  --fill-2: rgba(255, 255, 255, 0.1);
+  --bg: #08080b;
+  --bg-elevated: #1b1b20;
+  --card: #141418;
+  --card-2: #1b1b20;
+  --sheet-card: #26262d;
+  --card-pressed: #202026;
+  --fill: rgba(255, 255, 255, 0.065);
+  --fill-2: rgba(255, 255, 255, 0.11);
   --separator: rgba(255, 255, 255, 0.08);
-  --label: #f4f4f5;
-  --label-2: #a0a0ab;
-  --label-3: #6b6b75;
-  --accent: #a3a1fb;
-  --accent-soft: rgba(163, 161, 251, 0.14);
-  --positive: #4ade80;
-  --negative: #f87171;
+  --label: #f5f5f7;
+  --label-2: #a3a3b0;
+  --label-3: #6e6e7a;
+  --accent: #a8a2ff;
+  --accent-soft: rgba(168, 162, 255, 0.14);
+  --positive: #4fdc8c;
+  --negative: #ff7b72;
   --warning: #fbbf24;
-  --positive-soft: rgba(74, 222, 128, 0.12);
-  --negative-soft: rgba(248, 113, 113, 0.12);
-  --warning-soft: rgba(251, 191, 36, 0.12);
-  --ink: #1c1c1f;
+  --positive-soft: rgba(79, 220, 140, 0.13);
+  --negative-soft: rgba(255, 123, 114, 0.13);
+  --warning-soft: rgba(251, 191, 36, 0.13);
+  --ink: #1c1c21;
   --on-ink: #ffffff;
-  --on-ink-2: rgba(255, 255, 255, 0.6);
-  --tabbar: rgba(12, 12, 14, 0.86);
-  --backdrop: rgba(0, 0, 0, 0.55);
-  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --on-ink-2: rgba(255, 255, 255, 0.66);
+  --backdrop: rgba(0, 0, 0, 0.62);
+  --glass: rgba(30, 30, 36, 0.84);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --tab-active: rgba(168, 162, 255, 0.16);
+  --card-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --float-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.06), 0 18px 40px -10px rgba(0, 0, 0, 0.75);
+  --glow: rgba(124, 108, 242, 0.2);
+  --tint: 22%;
+  --brand-shadow: 0 10px 26px -10px rgba(91, 76, 240, 0.85);
+  --hero-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.06);
   --series-1: #3987e5;
   --series-2: #d95926;
   --chart-grid: rgba(255, 255, 255, 0.08);
@@ -75,6 +108,7 @@
   --color-elevated: var(--bg-elevated);
   --color-card: var(--card);
   --color-card-2: var(--card-2);
+  --color-sheet-card: var(--sheet-card);
   --color-fill: var(--fill);
   --color-fill-2: var(--fill-2);
   --color-separator: var(--separator);
@@ -92,7 +126,11 @@
   --color-ink: var(--ink);
   --color-on-ink: var(--on-ink);
   --color-on-ink-2: var(--on-ink-2);
+  --color-hero-positive: var(--hero-positive);
+  --color-hero-negative: var(--hero-negative);
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* SF Pro Rounded sur iPhone : chiffres doux et lisibles */
+  --font-rounded: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @layer base {
@@ -140,8 +178,82 @@
   }
 }
 
+@layer components {
+  /* Curseur façon iOS : piste fine remplie jusqu'à la valeur (--pct), pouce blanc */
+  .range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 44px;
+    background: transparent;
+  }
+  .range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent) 0 var(--pct, 0%), var(--fill-2) var(--pct, 0%) 100%);
+  }
+  .range::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent) 0 var(--pct, 0%), var(--fill-2) var(--pct, 0%) 100%);
+  }
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -11px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow:
+      0 0 0 0.5px rgba(0, 0, 0, 0.06),
+      0 3px 8px rgba(0, 0, 0, 0.16),
+      0 3px 1px rgba(0, 0, 0, 0.05);
+  }
+  .range::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+  }
+}
+
 @utility shadow-card {
   box-shadow: var(--card-shadow);
+}
+@utility shadow-float {
+  box-shadow: var(--float-shadow);
+}
+@utility shadow-brand {
+  box-shadow: var(--brand-shadow);
+}
+@utility bg-brand {
+  background-image: var(--brand);
+}
+@utility hero {
+  background: var(--hero);
+  box-shadow: var(--hero-shadow);
+  color: #fff;
+}
+/* Verre dépoli : barre d'onglets, en-tête au défilement, boutons ronds de l'en-tête */
+@utility glass {
+  background-color: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+}
+/* Pastille teintée par la couleur --c (catégorie) */
+@utility tint {
+  background-color: color-mix(in srgb, var(--c, var(--accent)) var(--tint), transparent);
+}
+/* Lueur de marque en haut de l'écran */
+@utility screen-glow {
+  background:
+    radial-gradient(120% 340px at 50% -120px, var(--glow) 0%, transparent 70%),
+    var(--bg);
+}
+@utility font-rounded {
+  font-family: var(--font-rounded);
 }
 @utility tabular {
   font-variant-numeric: tabular-nums;
@@ -165,12 +277,12 @@
 }
 @utility pressable {
   transition:
-    transform 120ms ease,
-    opacity 120ms ease,
-    background-color 120ms ease;
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 160ms ease,
+    background-color 160ms ease;
   &:active {
     transform: scale(0.97);
-    opacity: 0.85;
+    opacity: 0.88;
   }
 }
 

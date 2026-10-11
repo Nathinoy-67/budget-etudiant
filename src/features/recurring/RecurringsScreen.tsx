@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
-import { Badge, Button, Card, EmptyState, IconButton, List, Money, Section } from '../../components/ui';
+import { Badge, Button, Card, EmptyState, IconButton, List, Money, Section, Tile } from '../../components/ui';
 import { useData } from '../../hooks/useData';
 import { formatShortDate, inDaysLabel } from '../../lib/dates';
 import { frequencyShort, monthlyEquivalent, nextOccurrence, yearlyEquivalent } from '../../lib/recurrence';
@@ -17,16 +17,10 @@ export function RecurringRow({ r, onClick }: { r: Recurring; onClick: () => void
       ? `${accountById.get(r.accountId)?.name ?? '?'} → ${r.toAccountId ? (accountById.get(r.toAccountId)?.name ?? '?') : '?'}`
       : cat?.name;
   return (
-    <button onClick={onClick} className="relative flex min-h-[60px] w-full items-center gap-3 px-4 py-2 text-left active:bg-fill">
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-fill text-[19px]"
-        style={{ opacity: r.active ? 1 : 0.5 }}
-        aria-hidden="true"
-      >
-        {r.emoji ?? cat?.emoji ?? '🔁'}
-      </span>
+    <button onClick={onClick} className="relative flex min-h-[64px] w-full items-center gap-3 px-4 py-2 text-left transition-colors active:bg-fill">
+      <Tile emoji={r.emoji ?? cat?.emoji ?? '🔁'} color={cat?.color} className={r.active ? '' : 'opacity-50'} />
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 truncate text-[16px] font-medium">
+        <span className="flex items-center gap-1.5 truncate text-[15px] font-semibold tracking-[-0.01em]">
           <span className="truncate">{r.name}</span>
           {!r.active && <Badge>En pause</Badge>}
         </span>
@@ -79,19 +73,19 @@ export function RecurringsScreen() {
   }, [visible]);
 
   return (
-    <Screen title="Revenus et charges" back actions={<IconButton icon="plus" label="Ajouter" onClick={() => setDraft({})} />}>
-      <Card className="mb-7 grid grid-cols-3 divide-x divide-separator py-3.5 text-center">
+    <Screen title="Revenus et charges" back actions={<IconButton glass icon="plus" label="Ajouter" size={20} onClick={() => setDraft({})} />}>
+      <Card className="mb-8 grid grid-cols-3 divide-x divide-separator py-4 text-center">
         <div className="px-2">
-          <p className="text-[12px] text-label-2">Revenus</p>
-          <Money cents={totals.income} compact className="text-[16px] font-semibold text-positive" />
+          <p className="text-[12px] font-medium text-label-2">Revenus</p>
+          <Money cents={totals.income} compact className="mt-0.5 block text-[18px] font-semibold tracking-[-0.02em] text-positive" />
         </div>
         <div className="px-2">
-          <p className="text-[12px] text-label-2">Charges</p>
-          <Money cents={totals.expense} compact className="text-[16px] font-semibold text-negative" />
+          <p className="text-[12px] font-medium text-label-2">Charges</p>
+          <Money cents={totals.expense} compact className="mt-0.5 block text-[18px] font-semibold tracking-[-0.02em] text-negative" />
         </div>
         <div className="px-2">
-          <p className="text-[12px] text-label-2">Reste</p>
-          <Money cents={totals.income - totals.expense} compact colored className="text-[16px] font-semibold" />
+          <p className="text-[12px] font-medium text-label-2">Reste</p>
+          <Money cents={totals.income - totals.expense} compact colored className="mt-0.5 block text-[18px] font-semibold tracking-[-0.02em]" />
         </div>
       </Card>
 
@@ -123,7 +117,7 @@ export function RecurringsScreen() {
                   : undefined
               }
             >
-              <List>
+              <List inset={68}>
                 {items.map((r) => (
                   <RecurringRow key={r.id} r={r} onClick={() => setSelected(r)} />
                 ))}

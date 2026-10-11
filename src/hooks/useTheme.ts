@@ -8,7 +8,7 @@ export function useTheme(pref: ThemePref) {
     const apply = () => {
       const dark = pref === 'dark' || (pref === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', dark);
-      const color = dark ? '#000000' : '#F4F4F6';
+      const color = dark ? '#08080B' : '#F2F2F7';
       document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
         m.setAttribute('content', color);
         if (pref !== 'system') m.removeAttribute('media');

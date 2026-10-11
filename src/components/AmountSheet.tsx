@@ -65,7 +65,7 @@ export function AmountSheet({
         </div>
       }
     >
-      <p className={`my-4 text-center text-[44px] leading-none font-bold tracking-tight tabular ${value ? '' : 'opacity-30'}`} aria-live="polite">
+      <p className={`font-rounded my-5 text-center text-[52px] leading-none font-semibold tracking-[-0.035em] ${value ? '' : 'opacity-25'}`} aria-live="polite">
         {value ? formatMoney(cents) : formatMoney(0)}
       </p>
       {children}

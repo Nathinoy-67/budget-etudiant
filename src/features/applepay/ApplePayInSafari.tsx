@@ -23,7 +23,7 @@ export function ApplePayInSafari() {
           ton écran d'accueil. Sur iPhone, les deux ont des données séparées : ce paiement n'a donc <strong className="text-label">pas</strong> été
           enregistré dans ton budget.
         </p>
-        <div className="mt-6 rounded-2xl bg-card p-4 text-left text-[15px]">
+        <div className="mt-6 rounded-[22px] bg-card p-5 text-left text-[15px] shadow-card">
           <p className="mb-2 font-semibold">Que faire ?</p>
           <ol className="list-decimal space-y-1.5 pl-5 text-label-2">
             <li>Ajoute ce paiement à la main dans l'appli Budget (bouton +).</li>

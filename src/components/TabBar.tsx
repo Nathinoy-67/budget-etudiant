@@ -10,7 +10,7 @@ const TABS: { id: TabId; label: string; icon: IconName }[] = [
   { id: 'settings', label: 'Réglages', icon: 'gear' },
 ];
 
-/** Barre du bas : Accueil · Opérations · + · Analyse · Réglages. */
+/** Barre du bas flottante en verre dépoli : Accueil · Opérations · + · Analyse · Réglages. */
 export function TabBar() {
   const { tab, setTab } = useNav();
   const openNew = useTxSheet((s) => s.openNew);
@@ -26,17 +26,26 @@ export function TabBar() {
         }}
         aria-current={active ? 'page' : undefined}
         aria-label={t.label}
-        className={`flex min-h-[50px] flex-1 flex-col items-center justify-center gap-[3px] transition-colors ${active ? 'text-label' : 'text-label-3'}`}
+        className="flex min-h-[52px] min-w-0 flex-1 items-center justify-center"
       >
-        <Icon name={t.icon} size={23} strokeWidth={active ? 2.1 : 1.8} />
-        <span className={`text-[10px] ${active ? 'font-semibold' : 'font-medium'}`}>{t.label}</span>
+        <span
+          className={`flex h-[52px] w-full max-w-[78px] flex-col items-center justify-center gap-[3px] rounded-[24px] transition-colors duration-200 ${
+            active ? 'bg-[var(--tab-active)] text-accent' : 'text-label-2'
+          }`}
+        >
+          <Icon name={t.icon} size={22} strokeWidth={active ? 2.2 : 1.9} />
+          <span className="text-[10px] font-semibold">{t.label}</span>
+        </span>
       </button>
     );
   };
 
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-separator bg-[var(--tabbar)] backdrop-blur-xl" aria-label="Navigation principale">
-      <div className="mx-auto flex max-w-xl items-stretch px-1">
+    <nav
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(10px,calc(env(safe-area-inset-bottom)-12px))]"
+      aria-label="Navigation principale"
+    >
+      <div className="glass shadow-float pointer-events-auto mx-auto flex max-w-md items-center rounded-[32px] border border-[var(--glass-border)] p-1.5">
         {item(TABS[0])}
         {item(TABS[1])}
         <div className="flex flex-1 items-center justify-center">
@@ -46,9 +55,9 @@ export function TabBar() {
               openNew();
             }}
             aria-label="Ajouter une opération"
-            className="pressable flex h-12 w-12 items-center justify-center rounded-full bg-accent text-white"
+            className="pressable bg-brand shadow-brand flex h-[50px] w-[50px] items-center justify-center rounded-full text-white"
           >
-            <Icon name="plus" size={26} strokeWidth={2.4} />
+            <Icon name="plus" size={26} strokeWidth={2.5} />
           </button>
         </div>
         {item(TABS[2])}
