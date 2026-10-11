@@ -16,6 +16,16 @@ export function merchantKey(name: string): string {
   return normalizeMerchant(name).split(' ').slice(0, 2).join(' ');
 }
 
+/**
+ * Deux noms désignent-ils le même commerçant ? ("SPOTIFY P1234" et "Spotify" : oui ; "Boulangerie Paul" et "Spotify" : non.)
+ * Il suffit d'un mot significatif (3 lettres ou plus) en commun.
+ */
+export function sameMerchant(a: string, b: string): boolean {
+  const words = (s: string) => normalizeMerchant(s).split(' ').filter((w) => w.length >= 3 && !/^\d+$/.test(w));
+  const wa = new Set(words(a));
+  return words(b).some((w) => wa.has(w));
+}
+
 /** "CARREFOUR CITY" → "Carrefour City" (les noms Apple Pay arrivent souvent en majuscules). */
 export function prettyMerchant(name: string): string {
   const clean = name.replace(/\s+/g, ' ').trim();

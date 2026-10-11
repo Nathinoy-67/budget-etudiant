@@ -116,7 +116,9 @@ export default {
       }
       amount = amount.trim().slice(0, MAX_FIELD);
       merchant = merchant.trim().slice(0, MAX_FIELD);
-      if (!amount) return json({ error: 'montant manquant' }, 400, cors);
+      // Sans montant ni commerçant, il n'y a rien à enregistrer. Sans montant seulement, on garde le
+      // paiement : l'appli prévient et propose de l'ajouter à la main (rien n'est perdu en silence).
+      if (!amount && !merchant) return json({ error: 'paiement vide' }, 400, cors);
       const receivedAt = Date.now();
       const id = `${receivedAt.toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
       await env.PAYMENTS.put(`p:${id}`, JSON.stringify({ id, amount, merchant, receivedAt }), { expirationTtl: TTL_SECONDS });

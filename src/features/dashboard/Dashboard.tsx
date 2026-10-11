@@ -14,8 +14,8 @@ import { KeepAtEndSheet } from '../settings/KeepAtEndSheet';
 import { backToRealData } from '../settings/demoActions';
 
 /**
- * Accueil : combien je peux encore dépenser ce mois-ci, ce qui arrive, mes dernières opérations.
- * Pas de prévision ni de moyenne par jour : un gros achat compte une fois, pour son montant réel.
+ * Accueil : combien je peux encore dépenser ce mois-ci (et au maximum par jour), ce qui arrive,
+ * mes dernières opérations. Pas de prévision : un gros achat compte une fois, pour son montant réel.
  */
 export function Dashboard() {
   const { transactions, recurrings, period, today, categoryById, settings } = useData();
@@ -111,6 +111,36 @@ export function Dashboard() {
         </div>
       </button>
 
+      {/* Maximum par jour pour finir le mois avec au moins la somme à garder */}
+      {s.daysLeft > 0 && (
+        <Card className="mt-3 flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent" aria-hidden="true">
+            <Icon name="calendar" size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold">Maximum par jour</span>
+            <span className="block text-[13px] text-label-2">
+              {s.dailyMax <= 0 ? (
+                keepAtEnd > 0 ? (
+                  `Plus rien à dépenser pour garder ${formatMoney(keepAtEnd)}`
+                ) : (
+                  'Plus rien à dépenser ce mois-ci'
+                )
+              ) : s.todayLeft >= 0 ? (
+                <>
+                  Encore <span className="font-medium text-positive tabular">{formatMoney(s.todayLeft)}</span> aujourd'hui
+                </>
+              ) : (
+                <>
+                  Dépassé de <span className="font-medium text-negative tabular">{formatMoney(-s.todayLeft)}</span> aujourd'hui
+                </>
+              )}
+            </span>
+          </span>
+          <Money cents={s.dailyMax} className={`text-[22px] font-semibold tracking-[-0.02em] ${s.dailyMax > 0 ? 'text-positive' : 'text-negative'}`} />
+        </Card>
+      )}
+
       {/* D'où vient le reste à vivre : revenus − abonnements et charges − dépenses */}
       <Card className="mt-3 grid grid-cols-3 divide-x divide-separator py-3.5">
         <Metric label="Revenus" value={<Money cents={totalIncome} compact className="text-positive" />} />
@@ -190,6 +220,14 @@ export function Dashboard() {
           </button>
           <BreakRow label="Reste à vivre" cents={s.resteAVivre} bold />
         </List>
+        {s.daysLeft > 0 && (
+          <List className="mb-4">
+            <div className="relative flex min-h-12 items-center justify-between gap-3 px-4 font-semibold">
+              <span className="text-[15px]">Maximum par jour ({s.daysLeft} jour{s.daysLeft > 1 ? 's' : ''})</span>
+              <Money cents={s.dailyMax} className="text-[15px]" />
+            </div>
+          </List>
+        )}
         <div className="space-y-2 px-1 text-[14px] leading-relaxed text-label-2">
           <p>
             Le <strong className="text-label">reste à vivre</strong> est ce que tu peux encore dépenser ce mois-ci : tes revenus, moins tes abonnements et
@@ -202,6 +240,11 @@ export function Dashboard() {
             .
           </p>
           <p>Aucune prévision : un gros achat compte une seule fois, pour son montant réel.</p>
+          <p>
+            Le <strong className="text-label">maximum par jour</strong>, c'est le reste à vivre partagé entre les jours qui restent, aujourd'hui compris. Si tu
+            le respectes, tu finis le mois avec {keepAtEnd ? <>au moins {formatMoney(keepAtEnd)}</> : 'un compte qui ne passe pas dans le rouge'}. Il ne
+            bouge pas dans la journée et se recalcule chaque matin : si tu dépenses moins un jour, il augmente ; si tu dépenses plus, il baisse.
+          </p>
           <p>
             Pour qu'un abonnement soit déduit dès le début du mois, ouvre l'opération et active <strong className="text-label">« C'est un abonnement »</strong>.
           </p>

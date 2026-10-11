@@ -36,6 +36,14 @@ export interface MonthSummary {
   resteAVivre: Cents;
   /** Dépenses d'aujourd'hui. */
   todaySpent: Cents;
+  /**
+   * Maximum à dépenser par jour, aujourd'hui inclus, pour finir le mois avec au moins la somme à garder :
+   * reste à vivre (avant les dépenses courantes d'aujourd'hui) ÷ jours restants. 0 si plus rien à dépenser.
+   * Il ne bouge pas pendant la journée ; il se recalcule chaque matin d'après ce qui a vraiment été dépensé.
+   */
+  dailyMax: Cents;
+  /** Ce qu'il reste à dépenser aujourd'hui (dailyMax − dépenses courantes du jour), négatif si dépassé. */
+  todayLeft: Cents;
   daysTotal: number;
   /** Jours écoulés, aujourd'hui inclus. */
   daysElapsed: number;
@@ -61,6 +69,7 @@ export function computeSummary(
   let fixedPaid = 0;
   let variableSpent = 0;
   let todaySpent = 0;
+  let todayVariable = 0;
 
   for (const t of transactions) {
     if (!inPeriod(t.date, period)) continue;
@@ -68,7 +77,10 @@ export function computeSummary(
     else if (t.type === 'expense') {
       if (t.recurringId) fixedPaid += t.amount;
       else variableSpent += t.amount;
-      if (t.date === today) todaySpent += t.amount;
+      if (t.date === today) {
+        todaySpent += t.amount;
+        if (!t.recurringId) todayVariable += t.amount;
+      }
     }
   }
 
@@ -103,6 +115,7 @@ export function computeSummary(
   const resteAVivre = totalIncome - fixedTotal - variableSpent - keep;
   const envelope = totalIncome - keep;
   const engaged = fixedTotal + variableSpent;
+  const dailyMax = daysLeft > 0 ? Math.max(0, Math.floor((resteAVivre + todayVariable) / daysLeft)) : 0;
   const engagedPct = envelope > 0 ? (engaged / envelope) * 100 : engaged > 0 ? 100 : 0;
 
   return {
@@ -117,6 +130,8 @@ export function computeSummary(
     keepAtEnd: keep,
     resteAVivre,
     todaySpent,
+    dailyMax,
+    todayLeft: dailyMax - todayVariable,
     daysTotal,
     daysElapsed,
     daysLeft,

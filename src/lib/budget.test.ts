@@ -134,6 +134,26 @@ describe('computeSummary', () => {
     const last = computeSummary([], [], period, '2026-10-31');
     expect(last.daysLeft).toBe(1);
   });
+  it('maximum par jour pour finir avec la somme à garder (aujourd’hui inclus, stable dans la journée)', () => {
+    const ts = [
+      tx({ type: 'income', amount: 20000, date: '2026-10-01' }),
+      tx({ amount: 1000, date: '2026-10-03' }),
+      tx({ amount: 500, date: today }),
+    ];
+    const d = computeSummary(ts, [], period, today, 2000);
+    expect(d.resteAVivre).toBe(16500);
+    // (16 500 + 500 dépensés aujourd'hui) ÷ 25 jours
+    expect(d.dailyMax).toBe(680);
+    expect(d.todayLeft).toBe(180);
+    // une nouvelle dépense aujourd'hui ne change pas le maximum du jour, seulement ce qu'il reste
+    const d2 = computeSummary([...ts, tx({ amount: 300, date: today })], [], period, today, 2000);
+    expect(d2.dailyMax).toBe(680);
+    expect(d2.todayLeft).toBe(-120);
+  });
+  it('maximum par jour : 0 si plus rien à dépenser, ou période finie', () => {
+    expect(computeSummary([tx({ amount: 5000, date: '2026-10-02' })], [], period, today).dailyMax).toBe(0);
+    expect(computeSummary([tx({ type: 'income', amount: 5000, date: '2026-09-02' })], [], getPeriod('2026-09-10'), today).dailyMax).toBe(0);
+  });
 });
 
 describe('categoryBudgets', () => {

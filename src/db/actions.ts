@@ -4,6 +4,7 @@ import { buildDefaultAccounts, buildDefaultCategories, defaultSettings } from '.
 import { addDays, todayISO } from '../lib/dates';
 import { occurrencesBetween, pendingOccurrences } from '../lib/recurrence';
 import { TABLE_NAMES, makeBackup, type BackupData, type BackupFile } from '../lib/backup';
+import { sameMerchant } from '../lib/merchant';
 
 // ---------- Initialisation ----------
 
@@ -83,12 +84,14 @@ export async function restoreTransactions(ts: Transaction[]): Promise<void> {
 
 /**
  * Ajoute un paiement reçu automatiquement (Apple Pay). S'il correspond à une échéance d'abonnement
- * ou de charge fixe (même montant, à 3 jours près), il prend la place de cette échéance au lieu de
- * s'y ajouter : l'abonnement n'est jamais compté deux fois.
+ * ou de charge fixe (même montant, à 3 jours près, et même commerçant), il prend la place de cette
+ * échéance au lieu de s'y ajouter : l'abonnement n'est jamais compté deux fois.
+ * Le commerçant doit ressembler au nom de l'abonnement : un achat du même montant ailleurs
+ * (ex. 5,99 € à la boulangerie et Spotify à 5,99 €) reste une dépense à part et n'est pas « avalé ».
  */
 export async function addPaymentMatchingRecurring(t: NewTransaction & { id?: ID; createdAt?: number }): Promise<Transaction> {
   return db.transaction('rw', [db.recurrings, db.transactions], async () => {
-    const recs = (await db.recurrings.toArray()).filter((r) => r.active && r.type === t.type && r.amount === t.amount);
+    const recs = (await db.recurrings.toArray()).filter((r) => r.active && r.type === t.type && r.amount === t.amount && sameMerchant(t.merchant || t.note, r.name));
     for (const r of recs) {
       for (const occurrence of occurrencesBetween(r, addDays(t.date, -3), addDays(t.date, 3))) {
         const generated = await db.transactions.where('[recurringId+occurrence]').equals([r.id, occurrence]).first();

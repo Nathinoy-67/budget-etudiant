@@ -48,7 +48,7 @@ await page.getByRole('button', { name: 'Réglages' }).click();
 await page.getByRole('button', { name: /Paiements Apple Pay/ }).click();
 
 await page.getByRole('button', { name: 'Activer le relais' }).click();
-await page.getByText('Relais activé ✅').waitFor();
+await page.getByText('Relais activé', { exact: true }).first().waitFor();
 const key = await settingsKey();
 assert.ok(key && key.length >= 30, 'clé enregistrée');
 assert.equal((await (await fetch(`${RELAY}/`)).json()).claimed, true);
@@ -85,6 +85,20 @@ page2.on('pageerror', (e) => errors.push(e.message));
 await page2.goto(APP);
 await page2.getByText(/2 paiements Apple Pay ajoutés/).waitFor({ timeout: 40000 });
 ok("paiements faits appli fermée : ajoutés à l'ouverture");
+
+// Paiement sans montant (raccourci mal rempli, préautorisation…) : gardé et signalé, jamais perdu en silence
+const noAmount = await fetch(`${RELAY}/pay?key=${encodeURIComponent(key)}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ montant: '', marchand: 'TOTAL ACCESS' }),
+});
+assert.equal(noAmount.status, 200);
+await page2.getByText(/Paiement chez Total Access reçu sans montant lisible/).waitFor({ timeout: 40000 });
+await page2.getByRole('button', { name: 'Ajouter', exact: true }).click();
+await page2.getByText('Total Access').first().waitFor();
+const empty = await fetch(`${RELAY}/pay?key=${encodeURIComponent(key)}`, { method: 'POST', body: JSON.stringify({}) });
+assert.equal(empty.status, 400);
+ok('paiement sans montant : signalé avec « Ajouter » pré-rempli');
 
 console.log(errors.length ? `ERREURS JS:\n${errors.join('\n')}` : 'Aucune erreur JS.');
 await browser.close();

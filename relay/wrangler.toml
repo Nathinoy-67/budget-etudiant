@@ -3,6 +3,10 @@ main = "worker.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
 
+# Journal des appels (Workers Logs) : permet de voir si un paiement a été refusé ou n'est jamais arrivé
+[observability]
+enabled = true
+
 [vars]
 # Origines autorisées à lire les paiements (appli en ligne + développement local)
 ALLOWED_ORIGINS = "https://nathinoy-67.github.io,http://localhost:5173,http://localhost:4173"

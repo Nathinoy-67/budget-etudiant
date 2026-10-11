@@ -162,5 +162,14 @@ describe('abonnements', () => {
     // autre montant : simple dépense
     const other = await addPaymentMatchingRecurring({ type: 'expense', amount: 450, date: today, categoryId: null, accountId: account.id, note: 'Boulangerie', recurringId: null, occurrence: null, source: 'applepay' });
     expect(other.recurringId).toBeNull();
+    // même montant mais autre commerçant : l'achat n'est pas « avalé » par l'abonnement
+    await stopRecurring(r.id, today);
+    const r2 = await addRecurring({
+      name: 'Basic Fit', type: 'expense', amount: 2999, categoryId: null, accountId: account.id, toAccountId: null,
+      frequency: 'monthly', interval: 1, startDate: today, endDate: null, active: true, isSubscription: true, remindDaysBefore: 0,
+    });
+    const shoes = await addPaymentMatchingRecurring({ id: 'relay-2', type: 'expense', amount: 2999, date: today, categoryId: null, accountId: account.id, note: 'Decathlon', merchant: 'DECATHLON', recurringId: null, occurrence: null, source: 'applepay' });
+    expect(shoes.recurringId).toBeNull();
+    expect(await db.transactions.where('recurringId').equals(r2.id).count()).toBe(1);
   });
 });

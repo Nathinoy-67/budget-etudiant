@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Category } from '../types';
-import { guessCategory, merchantKey, normalizeMerchant, parseIncomingPayment, prettyMerchant } from './merchant';
+import { guessCategory, merchantKey, normalizeMerchant, parseIncomingPayment, prettyMerchant, sameMerchant } from './merchant';
 
 const cat = (id: string, name: string, archived = false): Category => ({ id, name, emoji: '', color: '', kind: 'expense', budget: null, order: 0, archived });
 const cats = [
@@ -22,6 +22,18 @@ describe('normalisation des commerçants', () => {
     expect(prettyMerchant('CARREFOUR CITY')).toBe('Carrefour City');
     expect(prettyMerchant("MCDONALD'S")).toBe("Mcdonald's");
     expect(prettyMerchant('Zara Home')).toBe('Zara Home');
+  });
+});
+
+describe('sameMerchant', () => {
+  it('reconnaît le même commerçant malgré la casse et les numéros', () => {
+    expect(sameMerchant('SPOTIFY P1A2B3', 'Spotify')).toBe(true);
+    expect(sameMerchant('BASIC-FIT PARIS 11', 'Basic Fit')).toBe(true);
+  });
+  it('distingue deux commerçants différents', () => {
+    expect(sameMerchant('Boulangerie Paul', 'Spotify')).toBe(false);
+    expect(sameMerchant('CB 1234', 'Netflix')).toBe(false);
+    expect(sameMerchant('', 'Netflix')).toBe(false);
   });
 });
 

@@ -1,9 +1,10 @@
 import type { AppData } from '../../hooks/useData';
 import { db } from '../../db/db';
 import { updateSettings } from '../../db/actions';
-import { parseIncomingPayment } from '../../lib/merchant';
+import { parseIncomingPayment, prettyMerchant } from '../../lib/merchant';
 import { todayISO } from '../../lib/dates';
 import { announcePayments, recordApplePayment } from './receive';
+import { toast, useTxSheet } from '../../stores/ui';
 import type { Transaction } from '../../types';
 
 /**
@@ -101,6 +102,7 @@ export function syncRelay(data: AppData): Promise<Transaction[]> {
     if (!items.length) return [];
 
     const created: Transaction[] = [];
+    const unreadable: RelayItem[] = [];
     const done: string[] = [];
     for (const item of items) {
       const txId = `relay-${item.id}`;
@@ -110,13 +112,15 @@ export function syncRelay(data: AppData): Promise<Transaction[]> {
       }
       const payment = parseIncomingPayment(`?applepay=${encodeURIComponent(`${item.amount}|${item.merchant}`)}`);
       if (!payment) {
-        done.push(item.id); // illisible : on l'écarte pour ne pas bloquer la file
+        // Montant absent ou illisible : on prévient au lieu de l'écarter en silence
+        unreadable.push(item);
+        done.push(item.id);
         continue;
       }
-      // Date du paiement (et non du jour de l'import), à l'heure de Paris
       // Identifiant stable (relay-<id>) : jamais de doublon ; date du paiement à l'heure de Paris
       const tx = await recordApplePayment(data, payment, { id: txId, createdAt: item.receivedAt, date: todayISO(new Date(item.receivedAt)) });
-      if (tx) created.push(tx);
+      if (!tx) continue; // appli pas prête (aucun compte) : le paiement reste sur le relais et sera repris
+      created.push(tx);
       done.push(item.id);
     }
 
@@ -133,9 +137,25 @@ export function syncRelay(data: AppData): Promise<Transaction[]> {
       await updateSettings({ lastApplePayAt: Date.now(), applePayCount: (data.settings.applePayCount ?? 0) + created.length });
       announcePayments(data, created);
     }
+    if (unreadable.length) announceUnreadable(unreadable);
     return created;
   })().finally(() => {
     running = null;
   });
   return running;
+}
+
+/** Paiement reçu sans montant lisible : on propose de l'ajouter à la main, déjà pré-rempli. */
+function announceUnreadable(items: RelayItem[]) {
+  const first = items[0];
+  const merchant = prettyMerchant(first.merchant || 'Apple Pay');
+  const more = items.length > 1 ? ` (et ${items.length - 1} autre${items.length > 2 ? 's' : ''})` : '';
+  toast(`Paiement chez ${merchant}${more} reçu sans montant lisible. Ajoute-le à la main.`, {
+    tone: 'warning',
+    duration: 15000,
+    action: {
+      label: 'Ajouter',
+      onClick: () => useTxSheet.getState().openNew({ type: 'expense', note: merchant, date: todayISO(new Date(first.receivedAt)) }),
+    },
+  });
 }
